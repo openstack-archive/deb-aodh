@@ -9,6 +9,6 @@ set -e
 #db_input high aodh/configure_db || true
 #db_go || true
 pkgos_rabbit_read_conf /etc/aodh/aodh.conf oslo_messaging_rabbit aodh
-#pkgos_read_admin_creds /etc/aodh/aodh.conf keystone_authtoken aodh
+pkgos_read_admin_creds /etc/aodh/aodh.conf keystone_authtoken aodh
 
 exit 0

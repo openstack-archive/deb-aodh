@@ -57,7 +57,7 @@ endif
 override_dh_sphinxdoc:
 ifeq (,$(findstring nodocs, $(DEB_BUILD_OPTIONS)))
 	PYTHONPATH=. sphinx-build -b html doc/source $(CURDIR)/debian/aodh-doc/usr/share/doc/aodh-doc/html
-#	mkdir -p $(CURDIR)/debian/ceilometer-doc/usr/share/doc/ceilometer-doc/html/_static
-#	touch $(CURDIR)/debian/ceilometer-doc/usr/share/doc/ceilometer-doc/html/_static/toggle.js
+	mkdir -p $(CURDIR)/debian/aodh-doc/usr/share/doc/aodh-doc/html/_static
+	touch $(CURDIR)/debian/aodh-doc/usr/share/doc/aodh-doc/html/_static/toggle.js
 	dh_sphinxdoc -O--buildsystem=python_distutils
 endif

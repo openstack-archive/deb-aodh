@@ -1,0 +1,42 @@
+# These templates have been reviewed by the debian-l10n-english
+# team
+#
+# If modifications/additions/rewording are needed, please ask
+# debian-l10n-english@lists.debian.org for advice.
+#
+# Even minor modifications require translation updates and such
+# changes should be coordinated with translators and reviewers.
+
+Template: aodh/rabbit_host
+Type: string
+Default: localhost
+_Description: IP address of your RabbitMQ host:
+ In order to interoperate with other components of OpenStack, this package
+ needs to connect to a central RabbitMQ server.
+ .
+ Please specify the IP address of that server.
+
+Template: aodh/rabbit_userid
+Type: string
+Default: guest
+_Description: Username for connection to the RabbitMQ server:
+ In order to interoperate with other components of OpenStack, this package
+ needs to connect to a central RabbitMQ server.
+ .
+ Please specify the username used to connect to the RabbitMQ server.
+
+Template: aodh/rabbit_password
+Type: password
+_Description: Password for connection to the RabbitMQ server:
+ In order to interoperate with other components of OpenStack, this package
+ needs to connect to a central RabbitMQ server.
+ .
+ Please specify the password used to connect to the RabbitMQ server.
+
+Template: aodh/auth-host
+Type: string
+Default: 127.0.0.1
+_Description: Authentication server hostname:
+ Please specify the hostname of the authentication server for Aodh.
+ Typically this is also the hostname of the OpenStack Identity Service
+ (Keystone).

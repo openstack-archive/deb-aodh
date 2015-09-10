@@ -1,0 +1,9 @@
+Document: aodh-doc
+Title: Aodh Documentation
+Author: OpenStack
+Abstract: Sphinx documentation for Aodh
+Section: Programming/Python
+
+Format: HTML
+Index: /usr/share/doc/aodh-doc/html/index.html
+Files: /usr/share/doc/aodh-doc/html/*

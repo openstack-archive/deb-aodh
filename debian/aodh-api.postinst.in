@@ -1,0 +1,15 @@
+#!/bin/sh
+
+set -e
+
+#PKGOS-INCLUDE#
+
+if [ "$1" = "configure" ] ; then
+	. /usr/share/debconf/confmodule
+	pkgos_register_endpoint_postinst aodh aodh alarming "Aodh Alarming Service" 8042 /
+	db_stop
+fi
+
+#DEBHELPER#
+
+exit 0

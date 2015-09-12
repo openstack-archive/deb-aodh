@@ -10,6 +10,8 @@ if [ "$1" = "configure" ] || [ "$1" = "reconfigure" ] ; then
 	pkgos_var_user_group aodh
 
 	pkgos_write_new_conf aodh aodh.conf
+	pkgos_write_new_conf aodh api_paste.ini
+	pkgos_write_new_conf aodh policy.json
 	pkgos_rabbit_write_conf /etc/aodh/aodh.conf oslo_messaging_rabbit aodh
 	pkgos_write_admin_creds /etc/aodh/aodh.conf keystone_authtoken aodh
 	#db_get ceilometer/configure_db

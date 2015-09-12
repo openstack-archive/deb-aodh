@@ -1,2 +1,4 @@
 /usr/bin/*
 aodh/api/app.wsgi	/usr/share/aodh-common
+etc/aodh/api_paste.ini	/usr/share/aodh-common
+etc/aodh/policy.json	/usr/share/aodh-common

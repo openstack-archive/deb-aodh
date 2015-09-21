@@ -144,6 +144,7 @@ Architecture: all
 Depends: adduser,
          aodh-common (= ${binary:Version}),
          debconf,
+         python-openstackclient,
          ${misc:Depends},
          ${ostack-lsb-base},
          ${python:Depends},

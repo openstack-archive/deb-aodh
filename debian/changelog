@@ -1,3 +1,9 @@
+aodh (1.0.0-2) experimental; urgency=medium
+
+  * Now aodh-api depends on openstackclient.
+
+ -- Thomas Goirand <zigo@debian.org>  Mon, 21 Sep 2015 12:51:21 +0000
+
 aodh (1.0.0-1) experimental; urgency=medium
 
   * Initial release. (Closes: #798570)

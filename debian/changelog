@@ -1,3 +1,9 @@
+aodh (1.0.0-3) experimental; urgency=medium
+
+  * Added a -expirer daemon, after request from upstream.
+
+ -- Thomas Goirand <zigo@debian.org>  Tue, 06 Oct 2015 15:14:51 +0000
+
 aodh (1.0.0-2) experimental; urgency=medium
 
   * Now aodh-api depends on openstackclient.

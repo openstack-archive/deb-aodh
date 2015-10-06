@@ -215,6 +215,25 @@ Description: OpenStack Telemetry (Ceilometer) Alarming - listener
  .
  This package contains the listener daemon: it does an alarm on an event.
 
+Package: aodh-expirer
+Architecture: all
+Depends: aodh-common (= ${binary:Version}),
+         ${misc:Depends},
+         ${ostack-lsb-base},
+         ${python:Depends},
+Description: OpenStack Telemetry (Ceilometer) Alarming - expirer
+ Ceilometer aims to deliver a Single Point Of Contact for billing systems,
+ providing all the counters they need to establish customer billing, across
+ all current and future OpenStack components. The delivery of counters must be
+ traceable and auditable, the counters must be easily extensible to support new
+ projects, and agents doing data collections should be independent of the
+ overall system.
+ .
+ (A ceilometer is an instrument that measures cloud coverage.)
+ .
+ This package contains the expirer. it is the script that handles time-to-live
+ support, when it is not natively supported by the database backend.
+
 Package: aodh-doc
 Section: doc
 Architecture: all

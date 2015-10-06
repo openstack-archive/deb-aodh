@@ -1,6 +1,7 @@
 aodh (1.0.0-3) experimental; urgency=medium
 
   * Added a -expirer daemon, after request from upstream.
+  * Minimum version for ceilometerclient is now 1.5.0.
 
  -- Thomas Goirand <zigo@debian.org>  Tue, 06 Oct 2015 15:14:51 +0000
 

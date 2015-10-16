@@ -1,8 +1,14 @@
-aodh (1.0.0-4) UNRELEASED; urgency=medium
+aodh (1.0.0-6) UNRELEASED; urgency=medium
 
   * Added python-pymysql as runtime dependency.
 
  -- Thomas Goirand <zigo@debian.org>  Tue, 13 Oct 2015 14:57:51 +0200
+
+aodh (1.0.0-4) unstable; urgency=medium
+
+  * Uploading to unstable.
+
+ -- Thomas Goirand <zigo@debian.org>  Fri, 16 Oct 2015 12:53:18 +0000
 
 aodh (1.0.0-3) experimental; urgency=medium
 

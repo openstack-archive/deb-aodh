@@ -1,4 +1,4 @@
-aodh (1.0.0-6) UNRELEASED; urgency=medium
+aodh (1.0.0-5) unstable; urgency=medium
 
   * Added python-pymysql as runtime dependency.
 

@@ -29,6 +29,10 @@ override_dh_install:
 	chmod 0644 $(CURDIR)/debian/aodh-common/usr/share/aodh-common/aodh.conf
 	sed -i 's|#connection[ \t]*=.*|connection=mongodb://localhost:27017/aodh|' $(CURDIR)/debian/aodh-common/usr/share/aodh-common/aodh.conf
 
+	# Add sqlalchemy migration which are missing
+	mkdir -p $(CURDIR)/debian/python-aodh/usr/lib/python2.7/dist-packages/aodh/storage/sqlalchemy
+	cp -auxf $(CURDIR)/aodh/storage/sqlalchemy/* $(CURDIR)/debian/python-aodh/usr/lib/python2.7/dist-packages/aodh/storage
+
 override_dh_auto_build:
 	dh_auto_build
 	/usr/share/openstack-pkg-tools/pkgos_insert_include pkgos_func aodh-common.config

@@ -1,3 +1,9 @@
+aodh (1.0.0-7) unstable; urgency=medium
+
+  * Correctly purge remaining folders on purge (Closes: #802534).
+
+ -- Thomas Goirand <zigo@debian.org>  Fri, 23 Oct 2015 12:15:10 +0000
+
 aodh (1.0.0-6) unstable; urgency=medium
 
   * Added missing Alembic migration scripts (LP: 1508463).

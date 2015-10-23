@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -e
+
+if [ "${1}" = "purge" ] ; then
+	rm -rf /etc/aodh /var/lib/aodh /var/log/aodh
+fi
+
+#DEBHELPER#
+
+exit 0

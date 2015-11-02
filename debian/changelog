@@ -1,3 +1,9 @@
+aodh (1.0.0-8) unstable; urgency=medium
+
+  * Rebuilt with openstack-pkg-tools 37 to use Keystone API v3.
+
+ -- Thomas Goirand <zigo@debian.org>  Mon, 02 Nov 2015 20:08:59 +0000
+
 aodh (1.0.0-7) unstable; urgency=medium
 
   * Correctly purge remaining folders on purge (Closes: #802534).

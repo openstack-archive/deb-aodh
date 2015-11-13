@@ -1,6 +1,7 @@
 aodh (1.0.0-10) unstable; urgency=medium
 
   * Import .po files from Glance (Closes: #802183).
+  * Added pt.po debconf translation (Closes: #802423).
 
  -- Thomas Goirand <zigo@debian.org>  Fri, 13 Nov 2015 09:48:15 +0100
 

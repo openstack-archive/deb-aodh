@@ -1,3 +1,9 @@
+aodh (1.0.0-10) unstable; urgency=medium
+
+  * Import .po files from Glance (Closes: #802183).
+
+ -- Thomas Goirand <zigo@debian.org>  Fri, 13 Nov 2015 09:48:15 +0100
+
 aodh (1.0.0-9) unstable; urgency=medium
 
   * Added q-text-as-data as depends for aodh-api.

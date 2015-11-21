@@ -1,3 +1,9 @@
+aodh (1.0.0-11) unstable; urgency=medium
+
+  * Fixed incorrect python-keystonemiddleware (build-)depends version.
+
+ -- Thomas Goirand <zigo@debian.org>  Sat, 21 Nov 2015 14:20:29 +0100
+
 aodh (1.0.0-10) unstable; urgency=medium
 
   * Import .po files from Glance (Closes: #802183).

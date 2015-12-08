@@ -17,7 +17,6 @@
 import os
 import socket
 
-from keystonemiddleware import opts as ks_opts
 from oslo_config import cfg
 from oslo_db import options as db_options
 import oslo_i18n
@@ -33,10 +32,6 @@ OPTS = [
                help='Name of this node, which must be valid in an AMQP '
                'key. Can be an opaque identifier. For ZeroMQ only, must '
                'be a valid host name, FQDN, or IP address.'),
-    cfg.IntOpt('notification_workers',
-               default=1,
-               help='Number of workers for notification service. A single '
-               'notification agent is enabled by default.'),
     cfg.IntOpt('http_timeout',
                default=600,
                help='Timeout seconds for HTTP requests. Set it to None to '
@@ -96,7 +91,7 @@ CLI_OPTS = [
 ]
 
 
-def prepare_service(argv=None):
+def prepare_service(argv=None, config_files=None):
     conf = cfg.ConfigOpts()
     oslo_i18n.enable_lazy()
     log.register_options(conf)
@@ -105,15 +100,14 @@ def prepare_service(argv=None):
     log.set_defaults(default_log_levels=log_levels)
     db_options.set_defaults(conf)
     policy_opts.set_defaults(conf)
-    for group, options in ks_opts.list_auth_token_opts():
-        conf.register_opts(list(options), group=group)
     from aodh import opts
     # Register our own Aodh options
     for group, options in opts.list_opts():
         conf.register_opts(list(options),
                            group=None if group == "DEFAULT" else group)
 
-    conf(argv, project='aodh', validate_default_values=True)
+    conf(argv, project='aodh', validate_default_values=True,
+         default_config_files=config_files)
     log.setup(conf, 'aodh')
     messaging.setup()
     return conf

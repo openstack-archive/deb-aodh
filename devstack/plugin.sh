@@ -32,7 +32,7 @@ function aodh_service_url {
 }
 
 
-# _install_mongdb - Install mongodb and pyton lib.
+# _install_mongdb - Install mongodb and python lib.
 function _aodh_install_mongodb {
     # Server package is the same on all
     local packages=mongodb-server
@@ -84,12 +84,18 @@ function _aodh_config_apache_wsgi {
     fi
 
     sudo cp $AODH_DIR/devstack/apache-aodh.template $aodh_apache_conf
+    if [ "$AODH_BACKEND" = 'hbase' ] ; then
+        # Use one process to have single in-memory DB instance for data consistency
+        AODH_API_WORKERS=1
+    else
+        AODH_API_WORKERS=$API_WORKERS
+    fi
     sudo sed -e "
         s|%PORT%|$AODH_SERVICE_PORT|g;
         s|%APACHE_NAME%|$APACHE_NAME|g;
         s|%WSGIAPP%|$AODH_WSGI_DIR/app|g;
         s|%USER%|$STACK_USER|g;
-        s|%APIWORKERS%|$API_WORKERS|g;
+        s|%APIWORKERS%|$AODH_API_WORKERS|g;
         s|%VIRTUALENV%|$venv_path|g
     " -i $aodh_apache_conf
 }
@@ -122,16 +128,21 @@ function _aodh_create_accounts {
                 "alarming" "OpenStack Alarming Service")
             get_or_create_endpoint $aodh_service \
                 "$REGION_NAME" \
-                "$(aodh_service_url)/" \
-                "$(aodh_service_url)/" \
-                "$(aodh_service_url)/"
+                "$(aodh_service_url)" \
+                "$(aodh_service_url)" \
+                "$(aodh_service_url)"
         fi
     fi
 }
 
 # Activities to do before aodh has been installed.
 function preinstall_aodh {
-    echo_summary "Preinstall not in virtualenv context. Skipping."
+    # Needed to build psycopg2
+    if is_ubuntu; then
+        install_package libpq-dev
+    else
+        install_package postgresql-devel
+    fi
 }
 
 # Remove WSGI files, disable and remove Apache vhost file
@@ -155,10 +166,11 @@ function cleanup_aodh {
 function _aodh_configure_storage_backend {
     if [ "$AODH_BACKEND" = 'mysql' ] || [ "$AODH_BACKEND" = 'postgresql' ] ; then
         iniset $AODH_CONF database connection $(database_connection_url aodh)
-        iniset $AODH_CONF DEFAULT collector_workers $API_WORKERS
     elif [ "$AODH_BACKEND" = 'mongodb' ] ; then
         iniset $AODH_CONF database connection mongodb://localhost:27017/aodh
         cleanup_aodh
+    elif [ "$AODH_BACKEND" = 'hbase' ] ; then
+        iniset $AODH_CONF database connection hbase://__test__
     else
         die $LINENO "Unable to configure unknown AODH_BACKEND $AODH_BACKEND"
     fi
@@ -182,21 +194,14 @@ function configure_aodh {
 
     cp $AODH_DIR/etc/aodh/api_paste.ini $AODH_CONF_DIR
 
-    # The alarm evaluator needs these options to call aodh APIs
+    # The alarm evaluator needs these options to call gnocchi/ceilometer APIs
     iniset $AODH_CONF service_credentials os_username aodh
     iniset $AODH_CONF service_credentials os_password $SERVICE_PASSWORD
     iniset $AODH_CONF service_credentials os_tenant_name $SERVICE_TENANT_NAME
     iniset $AODH_CONF service_credentials os_region_name $REGION_NAME
     iniset $AODH_CONF service_credentials os_auth_url $KEYSTONE_SERVICE_URI/v2.0
 
-    # TODO(chdent): Until
-    # https://bugs.launchpad.net/keystonemiddleware/+bug/1482078
-    # and
-    # https://bugs.launchpad.net/keystonemiddleware/+bug/1406218
-    # are resolved the easiest way to deal with the auth_token
-    # middleware when using a non-global conf is to put it in the
-    # paste file.
-    configure_auth_token_middleware $AODH_CONF_DIR/api_paste.ini aodh $AODH_AUTH_CACHE_DIR filter:authtoken
+    configure_auth_token_middleware $AODH_CONF aodh $AODH_AUTH_CACHE_DIR
 
     iniset $AODH_CONF notification store_events $AODH_EVENTS
 

@@ -36,6 +36,7 @@ LOG = log.getLogger(__name__)
 
 class RPCAlarmNotifier(object):
     def __init__(self, conf):
+        self.ctxt = context.get_admin_context()
         transport = messaging.get_transport(conf)
         self.client = messaging.get_rpc_client(
             transport, topic=conf.notifier_rpc_topic,
@@ -51,7 +52,7 @@ class RPCAlarmNotifier(object):
                        'previous': previous,
                        'state': alarm.state})
             return
-        self.client.cast(context.get_admin_context(),
+        self.client.cast(self.ctxt,
                          'notify_alarm', data={
                              'actions': actions,
                              'alarm_id': alarm.alarm_id,

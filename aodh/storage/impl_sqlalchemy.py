@@ -26,11 +26,11 @@ import six
 from sqlalchemy import desc
 
 from aodh.i18n import _LI
+from aodh import storage
 from aodh.storage import base
 from aodh.storage import models as alarm_api_models
 from aodh.storage.sqlalchemy import models
 from aodh.storage.sqlalchemy import utils as sql_utils
-from aodh import utils
 
 LOG = log.getLogger(__name__)
 
@@ -49,9 +49,9 @@ AVAILABLE_STORAGE_CAPABILITIES = {
 
 class Connection(base.Connection):
     """Put the data into a SQLAlchemy database. """
-    CAPABILITIES = utils.update_nested(base.Connection.CAPABILITIES,
-                                       AVAILABLE_CAPABILITIES)
-    STORAGE_CAPABILITIES = utils.update_nested(
+    CAPABILITIES = base.update_nested(base.Connection.CAPABILITIES,
+                                      AVAILABLE_CAPABILITIES)
+    STORAGE_CAPABILITIES = base.update_nested(
         base.Connection.STORAGE_CAPABILITIES,
         AVAILABLE_STORAGE_CAPABILITIES,
     )
@@ -63,8 +63,11 @@ class Connection(base.Connection):
         # in storage.__init__.get_connection_from_config function
         options = dict(conf.database.items())
         options['max_retries'] = 0
-        self.conf = conf
+        # oslo.db doesn't support options defined by Aodh
+        for opt in storage.OPTS:
+            options.pop(opt.name, None)
         self._engine_facade = db_session.EngineFacade(url, **options)
+        self.conf = conf
 
     def disconnect(self):
         self._engine_facade.get_engine().dispose()

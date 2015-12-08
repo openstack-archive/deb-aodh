@@ -49,19 +49,16 @@ from aodh import keystone_client
 from aodh import messaging
 from aodh import notifier
 from aodh.storage import models
-from aodh import utils
 
 LOG = log.getLogger(__name__)
 
 
 ALARM_API_OPTS = [
     cfg.IntOpt('user_alarm_quota',
-               default=None,
                deprecated_group="alarm",
                help='Maximum number of alarms defined for a user.'
                ),
     cfg.IntOpt('project_alarm_quota',
-               default=None,
                deprecated_group="alarm",
                help='Maximum number of alarms defined for a project.'
                ),
@@ -494,6 +491,13 @@ def _send_notification(event, payload):
     notifier.info(context.RequestContext(), notification, payload)
 
 
+def stringify_timestamps(data):
+    """Stringify any datetimes in given dict."""
+    return dict((k, v.isoformat()
+                 if isinstance(v, datetime.datetime) else v)
+                for (k, v) in six.iteritems(data))
+
+
 class AlarmController(rest.RestController):
     """Manages operations on a single alarm."""
 
@@ -520,7 +524,7 @@ class AlarmController(rest.RestController):
         if not pecan.request.cfg.record_history:
             return
         type = type or models.AlarmChange.RULE_CHANGE
-        scrubbed_data = utils.stringify_timestamps(data)
+        scrubbed_data = stringify_timestamps(data)
         detail = json.dumps(scrubbed_data)
         user_id = pecan.request.headers.get('X-User-Id')
         project_id = pecan.request.headers.get('X-Project-Id')
@@ -700,7 +704,7 @@ class AlarmsController(rest.RestController):
         if not pecan.request.cfg.record_history:
             return
         type = models.AlarmChange.CREATION
-        scrubbed_data = utils.stringify_timestamps(data)
+        scrubbed_data = stringify_timestamps(data)
         detail = json.dumps(scrubbed_data)
         user_id = pecan.request.headers.get('X-User-Id')
         project_id = pecan.request.headers.get('X-Project-Id')

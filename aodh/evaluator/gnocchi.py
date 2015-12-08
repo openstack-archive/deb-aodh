@@ -25,6 +25,7 @@ LOG = log.getLogger(__name__)
 
 OPTS = [
     cfg.StrOpt('gnocchi_url',
+               deprecated_group="alarm",
                default="http://localhost:8041",
                help='URL to Gnocchi.'),
 ]
@@ -32,8 +33,8 @@ OPTS = [
 
 class GnocchiThresholdEvaluator(threshold.ThresholdEvaluator):
 
-    def __init__(self, conf, notifier):
-        super(threshold.ThresholdEvaluator, self).__init__(conf, notifier)
+    def __init__(self, conf):
+        super(threshold.ThresholdEvaluator, self).__init__(conf)
         self.gnocchi_url = conf.gnocchi_url
 
     def _get_headers(self, content_type="application/json"):
@@ -64,14 +65,14 @@ class GnocchiThresholdEvaluator(threshold.ThresholdEvaluator):
             # delete an instance, the gnocchi metrics associated to this
             # instance will be no more updated and when the alarm will ask
             # for the aggregation, gnocchi will raise a 'No overlap' exception.
-            # So temporary set 'percent_of_overlap' to 0 to disable the
+            # So temporary set 'needed_overlap' to 0 to disable the
             # gnocchi checks about missing points. For more detail see:
             #   https://bugs.launchpad.net/gnocchi/+bug/1479429
-            req['params']['percent_of_overlap'] = 0
+            req['params']['needed_overlap'] = 0
 
         elif alarm.type == 'gnocchi_aggregation_by_metrics_threshold':
             req['url'] += "/aggregation/metric"
-            req['params']['metric[]'] = alarm.rule['metrics']
+            req['params']['metric'] = alarm.rule['metrics']
 
         elif alarm.type == 'gnocchi_resources_threshold':
             req['url'] += "/resource/%s/%s/metric/%s/measures" % (
@@ -97,5 +98,10 @@ class GnocchiThresholdEvaluator(threshold.ThresholdEvaluator):
         # policy with granularity that's an even divisor or the period,
         # we could potentially do a mean-of-means (or max-of-maxes or whatever,
         # but not a stddev-of-stddevs).
-        return [stats[2] for stats in statistics
-                if stats[1] == alarm.rule['granularity']]
+        # TODO(sileht): support alarm['exclude_outliers']
+        LOG.debug('sanitize stats %s', statistics)
+        statistics = [stats[2] for stats in statistics
+                      if stats[1] == alarm.rule['granularity']]
+        statistics = statistics[-alarm.rule['evaluation_periods']:]
+        LOG.debug('pruned statistics to %d', len(statistics))
+        return statistics

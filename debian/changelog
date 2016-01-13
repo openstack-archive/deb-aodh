@@ -3,6 +3,7 @@ aodh (2.0.0~b1-3) UNRELEASED; urgency=medium
   [ Corey Bryant ]
   * d/control: Add python-pymongo to python-aodh depends as aodh-api init
     script fails without it.
+  * d/rules: Ensure that alembic files are installed correctly.
 
   [ Thomas Goirand ]
   * Fix where the alembic files are stored.

@@ -31,7 +31,7 @@ override_dh_install:
 
 	# Add sqlalchemy migration which are missing
 	mkdir -p $(CURDIR)/debian/python-aodh/usr/lib/python2.7/dist-packages/aodh/storage/sqlalchemy
-	cp -auxf $(CURDIR)/aodh/storage/sqlalchemy/* $(CURDIR)/debian/python-aodh/usr/lib/python2.7/dist-packages/aodh/storage
+	cp -auxf $(CURDIR)/aodh/storage/sqlalchemy/* $(CURDIR)/debian/python-aodh/usr/lib/python2.7/dist-packages/aodh/storage/sqlalchemy
 
 override_dh_auto_build:
 	dh_auto_build

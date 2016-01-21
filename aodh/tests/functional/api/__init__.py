@@ -16,6 +16,8 @@
 """Base classes for API tests.
 """
 
+import os
+
 from oslo_config import fixture as fixture_config
 import pecan
 import pecan.testing
@@ -39,8 +41,8 @@ class FunctionalTest(db_test_base.TestBase):
         self.CONF = self.useFixture(fixture_config.Config(conf)).conf
         self.setup_messaging(self.CONF)
 
-        self.CONF.set_override("policy_file",
-                               self.path_get('etc/aodh/policy.json'),
+        self.CONF.set_override('policy_file',
+                               os.path.abspath('etc/aodh/policy.json'),
                                group='oslo_policy')
         self.app = self._make_app()
 

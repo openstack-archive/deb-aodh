@@ -66,8 +66,10 @@ class ConfigFixture(fixture.GabbiFixture):
         conf = fixture_config.Config(conf).conf
         self.conf = conf
         opts.set_defaults(self.conf)
+
         conf.set_override('policy_file',
-                          os.path.abspath('etc/aodh/policy.json'),
+                          os.path.abspath(
+                              'aodh/tests/open-policy.json'),
                           group='oslo_policy')
 
         database_name = '%s-%s' % (db_url, str(uuid.uuid4()))

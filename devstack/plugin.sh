@@ -214,6 +214,10 @@ function configure_aodh {
         iniset $AODH_CONF api pecan_debug "False"
         _aodh_config_apache_wsgi
     fi
+
+    if is_service_enabled gnocchi-api; then
+        iniset $AODH_CONF DEFAULT gnocchi_url $(gnocchi_service_url)
+    fi
 }
 
 # init_aodh() - Initialize etc.
@@ -241,7 +245,7 @@ function install_aodh {
     _aodh_prepare_coordination
     _aodh_prepare_storage_backend
     install_aodhclient
-    setup_develop $AODH_DIR
+    sudo -H pip install -e "$AODH_DIR"[test,$AODH_BACKEND]
     sudo install -d -o $STACK_USER -m 755 $AODH_CONF_DIR $AODH_API_LOG_DIR
 }
 

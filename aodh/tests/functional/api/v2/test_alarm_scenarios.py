@@ -15,15 +15,15 @@
 """Tests alarm operation."""
 
 import datetime
+import os
 import uuid
 
+from gnocchiclient import exceptions
 import mock
 import oslo_messaging.conffixture
 from oslo_serialization import jsonutils
-import requests
 import six
 from six import moves
-import six.moves.urllib.parse as urlparse
 
 from aodh import messaging
 from aodh.storage import models
@@ -137,6 +137,16 @@ def default_alarms(auth_headers):
             ]
 
 
+class LegacyPolicyFileMixin(object):
+    def setUp(self):
+        super(LegacyPolicyFileMixin, self).setUp()
+        self.CONF.set_override(
+            'policy_file',
+            os.path.abspath('aodh/tests/policy.json-pre-mikita'),
+            group='oslo_policy')
+        self.app = self._make_app()
+
+
 class TestAlarmsBase(v2.FunctionalTest):
 
     def setUp(self):
@@ -161,14 +171,15 @@ class TestAlarmsBase(v2.FunctionalTest):
                 storage_key = key
             self.assertEqual(json[key], getattr(alarm, storage_key))
 
-    def _get_alarm(self, id):
-        data = self.get_json('/alarms')
+    def _get_alarm(self, id, auth_headers=None):
+        data = self.get_json('/alarms',
+                             headers=auth_headers or self.auth_headers)
         match = [a for a in data if a['alarm_id'] == id]
         self.assertEqual(1, len(match), 'alarm %s not found' % id)
         return match[0]
 
     def _update_alarm(self, id, updated_data, auth_headers=None):
-        data = self._get_alarm(id)
+        data = self._get_alarm(id, auth_headers)
         data.update(updated_data)
         self.put_json('/alarms/%s' % id,
                       params=data,
@@ -183,7 +194,7 @@ class TestAlarmsBase(v2.FunctionalTest):
 class TestListEmptyAlarms(TestAlarmsBase):
 
     def test_empty(self):
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual([], data)
 
 
@@ -195,7 +206,7 @@ class TestAlarms(TestAlarmsBase):
             self.alarm_conn.update_alarm(alarm)
 
     def test_list_alarms(self):
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(4, len(data))
         self.assertEqual(set(['name1', 'name2', 'name3', 'name4']),
                          set(r['name'] for r in data))
@@ -210,6 +221,7 @@ class TestAlarms(TestAlarmsBase):
         date_time = datetime.datetime(2012, 7, 2, 10, 41)
         isotime = date_time.isoformat()
         resp = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'timestamp',
                                  'op': 'gt',
                                  'value': isotime}],
@@ -222,6 +234,7 @@ class TestAlarms(TestAlarmsBase):
 
     def test_alarms_query_with_meter(self):
         resp = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'meter',
                                  'op': 'eq',
                                  'value': 'meter.mine'}],
@@ -254,6 +267,7 @@ class TestAlarms(TestAlarmsBase):
                              severity='critical')
         self.alarm_conn.update_alarm(alarm)
         resp = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'state',
                                  'op': 'eq',
                                  'value': 'ok'}],
@@ -263,6 +277,7 @@ class TestAlarms(TestAlarmsBase):
 
     def test_list_alarms_by_type(self):
         alarms = self.get_json('/alarms',
+                               headers=self.auth_headers,
                                q=[{'field': 'type',
                                    'op': 'eq',
                                    'value': 'threshold'}])
@@ -271,14 +286,18 @@ class TestAlarms(TestAlarmsBase):
                          set(alarm['type'] for alarm in alarms))
 
     def test_get_not_existing_alarm(self):
-        resp = self.get_json('/alarms/alarm-id-3', expect_errors=True)
+        resp = self.get_json('/alarms/alarm-id-3',
+                             headers=self.auth_headers,
+                             expect_errors=True)
         self.assertEqual(404, resp.status_code)
-        self.assertEqual('Alarm alarm-id-3 not found',
+        self.assertEqual('Alarm alarm-id-3 not found in project %s' %
+                         self.auth_headers["X-Project-Id"],
                          jsonutils.loads(resp.body)['error_message']
                          ['faultstring'])
 
     def test_get_alarm(self):
         alarms = self.get_json('/alarms',
+                               headers=self.auth_headers,
                                q=[{'field': 'name',
                                    'value': 'name1',
                                    }])
@@ -286,7 +305,8 @@ class TestAlarms(TestAlarmsBase):
         self.assertEqual('meter.test',
                          alarms[0]['threshold_rule']['meter_name'])
 
-        one = self.get_json('/alarms/%s' % alarms[0]['alarm_id'])
+        one = self.get_json('/alarms/%s' % alarms[0]['alarm_id'],
+                            headers=self.auth_headers)
         self.assertEqual('name1', one['name'])
         self.assertEqual('meter.test', one['threshold_rule']['meter_name'])
         self.assertEqual(alarms[0]['alarm_id'], one['alarm_id'])
@@ -315,12 +335,14 @@ class TestAlarms(TestAlarmsBase):
         self.alarm_conn.update_alarm(alarm)
 
         alarms = self.get_json('/alarms',
+                               headers=self.auth_headers,
                                q=[{'field': 'enabled',
                                    'value': 'False'}])
         self.assertEqual(1, len(alarms))
         self.assertEqual('disabled', alarms[0]['name'])
 
-        one = self.get_json('/alarms/%s' % alarms[0]['alarm_id'])
+        one = self.get_json('/alarms/%s' % alarms[0]['alarm_id'],
+                            headers=self.auth_headers)
         self.assertEqual('disabled', one['name'])
 
     def test_get_alarm_project_filter_wrong_op_normal_user(self):
@@ -348,6 +370,7 @@ class TestAlarms(TestAlarmsBase):
 
         def _test(field):
             alarms = self.get_json('/alarms',
+                                   headers=self.auth_headers,
                                    q=[{'field': field,
                                        'op': 'eq',
                                        'value': project}])
@@ -371,6 +394,20 @@ class TestAlarms(TestAlarmsBase):
 
         _test('project')
         _test('project_id')
+
+    def test_get_alarm_forbiden(self):
+        pf = os.path.abspath('aodh/tests/functional/api/v2/policy.json-test')
+        self.CONF.set_override('policy_file', pf, group='oslo_policy')
+        self.app = self._make_app()
+
+        response = self.get_json('/alarms',
+                                 expect_errors=True,
+                                 status=403,
+                                 headers=self.auth_headers)
+        faultstring = 'RBAC Authorization Failed'
+        self.assertEqual(403, response.status_code)
+        self.assertEqual(faultstring,
+                         response.json['error_message']['faultstring'])
 
     def test_post_alarm_wsme_workaround(self):
         jsons = {
@@ -1282,7 +1319,7 @@ class TestAlarms(TestAlarmsBase):
         }
         auth = mock.Mock()
         trust_client = mock.Mock()
-        with mock.patch('aodh.keystone_client.get_v3_client') as client:
+        with mock.patch('aodh.keystone_client.get_client') as client:
             client.return_value = mock.Mock(
                 auth_ref=mock.Mock(user_id='my_user'))
             with mock.patch('keystoneclient.v3.client.Client') as sub_client:
@@ -1307,7 +1344,7 @@ class TestAlarms(TestAlarmsBase):
         else:
             self.fail("Alarm not found")
 
-        with mock.patch('aodh.keystone_client.get_v3_client') as client:
+        with mock.patch('aodh.keystone_client.get_client') as client:
             client.return_value = mock.Mock(
                 auth_ref=mock.Mock(user_id='my_user'))
             with mock.patch('keystoneclient.v3.client.Client') as sub_client:
@@ -1343,6 +1380,7 @@ class TestAlarms(TestAlarmsBase):
             }
         }
         data = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'name',
                                  'value': 'name1',
                                  }])
@@ -1434,6 +1472,7 @@ class TestAlarms(TestAlarmsBase):
             }
         }
         data = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'name',
                                  'value': 'name1',
                                  }])
@@ -1472,6 +1511,7 @@ class TestAlarms(TestAlarmsBase):
             }
         }
         data = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'name',
                                  'value': 'name2',
                                  }])
@@ -1511,6 +1551,7 @@ class TestAlarms(TestAlarmsBase):
             }
         }
         data = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'name',
                                  'value': 'name2',
                                  }])
@@ -1529,7 +1570,7 @@ class TestAlarms(TestAlarmsBase):
         data = self._get_alarm('a')
         data.update({'ok_actions': ['trust+http://something/ok']})
         trust_client = mock.Mock()
-        with mock.patch('aodh.keystone_client.get_v3_client') as client:
+        with mock.patch('aodh.keystone_client.get_client') as client:
             client.return_value = mock.Mock(
                 auth_ref=mock.Mock(user_id='my_user'))
             with mock.patch('keystoneclient.v3.client.Client') as sub_client:
@@ -1544,7 +1585,7 @@ class TestAlarms(TestAlarmsBase):
 
         data.update({'ok_actions': ['http://no-trust-something/ok']})
 
-        with mock.patch('aodh.keystone_client.get_v3_client') as client:
+        with mock.patch('aodh.keystone_client.get_client') as client:
             client.return_value = mock.Mock(
                 auth_ref=mock.Mock(user_id='my_user'))
             with mock.patch('keystoneclient.v3.client.Client') as sub_client:
@@ -1559,7 +1600,7 @@ class TestAlarms(TestAlarmsBase):
             ['http://no-trust-something/ok'], data['ok_actions'])
 
     def test_delete_alarm(self):
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(4, len(data))
 
         resp = self.delete('/alarms/%s' % data[0]['alarm_id'],
@@ -1570,7 +1611,7 @@ class TestAlarms(TestAlarmsBase):
         self.assertEqual(3, len(alarms))
 
     def test_get_state_alarm(self):
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(4, len(data))
 
         resp = self.get_json('/alarms/%s/state' % data[0]['alarm_id'],
@@ -1578,7 +1619,7 @@ class TestAlarms(TestAlarmsBase):
         self.assertEqual(resp, data[0]['state'])
 
     def test_set_state_alarm(self):
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(4, len(data))
 
         resp = self.put_json('/alarms/%s/state' % data[0]['alarm_id'],
@@ -1590,7 +1631,7 @@ class TestAlarms(TestAlarmsBase):
         self.assertEqual('alarm', resp.json)
 
     def test_set_invalid_state_alarm(self):
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(4, len(data))
 
         self.put_json('/alarms/%s/state' % data[0]['alarm_id'],
@@ -1631,18 +1672,7 @@ class TestAlarms(TestAlarmsBase):
                              'user_id']).issubset(payload.keys()))
 
         endpoint.info.assert_called_once_with(
-            {'resource_uuid': None,
-             'domain': None,
-             'project_domain': None,
-             'auth_token': None,
-             'is_admin': False,
-             'user': None,
-             'tenant': None,
-             'read_only': False,
-             'show_deleted': False,
-             'user_identity': '- - - - -',
-             'request_id': mock.ANY,
-             'user_domain': None},
+            {},
             'aodh.api', 'alarm.creation',
             PayloadMatcher(), mock.ANY)
 
@@ -1661,6 +1691,10 @@ class TestAlarms(TestAlarmsBase):
         self.assertTrue(set(['alarm_id', 'detail', 'event_id', 'on_behalf_of',
                              'project_id', 'timestamp', 'type',
                              'user_id']).issubset(payload.keys()))
+
+
+class TestAlarmsLegacy(LegacyPolicyFileMixin, TestAlarms):
+    pass
 
 
 class TestAlarmsHistory(TestAlarmsBase):
@@ -1783,6 +1817,7 @@ class TestAlarmsHistory(TestAlarmsBase):
                        headers=self.auth_headers)
 
         alarms = self.get_json('/alarms',
+                               headers=self.auth_headers,
                                q=[{'field': 'name',
                                    'value': 'new_alarm',
                                    }])
@@ -2017,6 +2052,10 @@ class TestAlarmsHistory(TestAlarmsBase):
         self.assertEqual([], history)
 
 
+class TestAlarmsHistoryLegacy(LegacyPolicyFileMixin, TestAlarmsHistory):
+    pass
+
+
 class TestAlarmsQuotas(TestAlarmsBase):
 
     def _test_alarm_quota(self):
@@ -2039,7 +2078,7 @@ class TestAlarmsQuotas(TestAlarmsBase):
         resp = self.post_json('/alarms', params=alarm,
                               headers=self.auth_headers)
         self.assertEqual(201, resp.status_code)
-        alarms = self.get_json('/alarms')
+        alarms = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(1, len(alarms))
 
         alarm['name'] = 'another_user_alarm'
@@ -2051,7 +2090,7 @@ class TestAlarmsQuotas(TestAlarmsBase):
         self.assertIn(faultstring,
                       resp.json['error_message']['faultstring'])
 
-        alarms = self.get_json('/alarms')
+        alarms = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(1, len(alarms))
 
     def test_alarms_quotas(self):
@@ -2087,7 +2126,8 @@ class TestAlarmsQuotas(TestAlarmsBase):
                 'op': 'eq',
                 'value': value
             }]
-            alarms = self.get_json('/alarms', q=query)
+            alarms = self.get_json('/alarms', q=query,
+                                   headers=self.auth_headers)
             self.assertEqual(1, len(alarms))
 
         alarm = {
@@ -2121,7 +2161,8 @@ class TestAlarmsQuotas(TestAlarmsBase):
         self.assertEqual(201, resp.status_code)
         _test('project_id', self.auth_headers['X-Project-Id'])
 
-        alarms = self.get_json('/alarms')
+        self.auth_headers["X-roles"] = "admin"
+        alarms = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(2, len(alarms))
 
 
@@ -2333,6 +2374,7 @@ class TestAlarmsRuleCombination(TestAlarmsBase):
 
     def test_get_alarm_combination(self):
         alarms = self.get_json('/alarms',
+                               headers=self.auth_headers,
                                q=[{'field': 'name',
                                    'value': 'name4',
                                    }])
@@ -2341,7 +2383,8 @@ class TestAlarmsRuleCombination(TestAlarmsBase):
                          alarms[0]['combination_rule']['alarm_ids'])
         self.assertEqual('or', alarms[0]['combination_rule']['operator'])
 
-        one = self.get_json('/alarms/%s' % alarms[0]['alarm_id'])
+        one = self.get_json('/alarms/%s' % alarms[0]['alarm_id'],
+                            headers=self.auth_headers)
         self.assertEqual('name4', one['name'])
         self.assertEqual(['a', 'b'],
                          alarms[0]['combination_rule']['alarm_ids'])
@@ -2621,6 +2664,7 @@ class TestAlarmsRuleCombination(TestAlarmsBase):
         }
 
         data = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'name',
                                  'value': 'name4',
                                  }])
@@ -2646,6 +2690,7 @@ class TestAlarmsRuleCombination(TestAlarmsBase):
         }
 
         data = self.get_json('/alarms',
+                             headers=self.auth_headers,
                              q=[{'field': 'name',
                                  'value': 'name4',
                                  }])
@@ -2673,6 +2718,7 @@ class TestAlarmsRuleCombination(TestAlarmsBase):
     def test_put_combination_alarm_with_duplicate_ids(self):
         """Test combination alarm doesn't allow duplicate alarm ids."""
         alarms = self.get_json('/alarms',
+                               headers=self.auth_headers,
                                q=[{'field': 'name',
                                    'value': 'name4',
                                    }])
@@ -2693,6 +2739,11 @@ class TestAlarmsRuleCombination(TestAlarmsBase):
         alarms = list(self.alarm_conn.get_alarms(alarm_id=alarm_id))
         self.assertEqual(1, len(alarms))
         self.assertEqual(['c', 'a', 'b'], alarms[0].rule.get('alarm_ids'))
+
+
+class TestAlarmsRuleCombinationLegacy(LegacyPolicyFileMixin,
+                                      TestAlarmsRuleCombination):
+    pass
 
 
 class TestAlarmsRuleGnocchi(TestAlarmsBase):
@@ -2785,7 +2836,7 @@ class TestAlarmsRuleGnocchi(TestAlarmsBase):
             self.alarm_conn.update_alarm(alarm)
 
     def test_list_alarms(self):
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(3, len(data))
         self.assertEqual(set(['name1', 'name2', 'name3']),
                          set(r['name'] for r in data))
@@ -2794,8 +2845,7 @@ class TestAlarmsRuleGnocchi(TestAlarmsBase):
                              for r in data
                              if 'gnocchi_resources_threshold_rule' in r))
 
-    @mock.patch('aodh.keystone_client.get_client')
-    def test_post_gnocchi_resources_alarm(self, __):
+    def test_post_gnocchi_resources_alarm(self):
         json = {
             'enabled': False,
             'name': 'name_post',
@@ -2818,53 +2868,44 @@ class TestAlarmsRuleGnocchi(TestAlarmsBase):
             }
         }
 
-        with mock.patch('requests.get',
-                        side_effect=requests.ConnectionError()):
+        with mock.patch('aodh.api.controllers.v2.alarm_rules.'
+                        'gnocchi.client') as clientlib:
+            c = clientlib.Client.return_value
+            c.capabilities.list.side_effect = Exception("boom!")
             resp = self.post_json('/alarms', params=json,
                                   headers=self.auth_headers,
                                   expect_errors=True)
             self.assertEqual(503, resp.status_code, resp.body)
 
-        with mock.patch('requests.get',
-                        return_value=mock.Mock(status_code=500,
-                                               body="my_custom_error",
-                                               text="my_custom_error")):
+        with mock.patch('aodh.api.controllers.v2.alarm_rules.'
+                        'gnocchi.client') as clientlib:
+            c = clientlib.Client.return_value
+            c.capabilities.list.side_effect = (
+                exceptions.ClientException(500, "my_custom_error"))
             resp = self.post_json('/alarms', params=json,
                                   headers=self.auth_headers,
                                   expect_errors=True)
-            self.assertEqual(503, resp.status_code, resp.body)
+            self.assertEqual(500, resp.status_code, resp.body)
             self.assertIn('my_custom_error',
                           resp.json['error_message']['faultstring'])
 
-        cap_result = mock.Mock(status_code=201,
-                               text=jsonutils.dumps(
-                                   {'aggregation_methods': ['count']}))
-        resource_result = mock.Mock(status_code=200, text="blob")
-        with mock.patch('requests.get', side_effect=[cap_result,
-                                                     resource_result]
-                        ) as gnocchi_get:
+        with mock.patch('aodh.api.controllers.v2.alarm_rules.'
+                        'gnocchi.client') as clientlib:
+            c = clientlib.Client.return_value
+            c.capabilities.list.return_value = {
+                'aggregation_methods': ['count']}
             self.post_json('/alarms', params=json, headers=self.auth_headers)
-
-            gnocchi_url = self.CONF.gnocchi_url
-            capabilities_url = urlparse.urljoin(gnocchi_url,
-                                                '/v1/capabilities')
-            resource_url = urlparse.urljoin(
-                gnocchi_url,
-                '/v1/resource/instance/209ef69c-c10c-4efb-90ff-46f4b2d90d2e'
-            )
-
-            expected = [mock.call(capabilities_url,
-                                  headers=mock.ANY),
-                        mock.call(resource_url,
-                                  headers=mock.ANY)]
-            self.assertEqual(expected, gnocchi_get.mock_calls)
+            expected = [mock.call.capabilities.list(),
+                        mock.call.resource.get(
+                            "instance",
+                            "209ef69c-c10c-4efb-90ff-46f4b2d90d2e")]
+            self.assertEqual(expected, c.mock_calls)
 
         alarms = list(self.alarm_conn.get_alarms(enabled=False))
         self.assertEqual(1, len(alarms))
         self._verify_alarm(json, alarms[0])
 
-    @mock.patch('aodh.keystone_client.get_client')
-    def test_post_gnocchi_metrics_alarm(self, __):
+    def test_post_gnocchi_metrics_alarm(self):
         json = {
             'enabled': False,
             'name': 'name_post',
@@ -2886,19 +2927,19 @@ class TestAlarmsRuleGnocchi(TestAlarmsBase):
             }
         }
 
-        cap_result = mock.Mock(status_code=200,
-                               text=jsonutils.dumps(
-                                   {'aggregation_methods': ['count']}))
-        with mock.patch('requests.get', return_value=cap_result):
+        with mock.patch('aodh.api.controllers.v2.alarm_rules.'
+                        'gnocchi.client') as clientlib:
+            c = clientlib.Client.return_value
+            c.capabilities.list.return_value = {
+                'aggregation_methods': ['count']}
+
             self.post_json('/alarms', params=json, headers=self.auth_headers)
 
         alarms = list(self.alarm_conn.get_alarms(enabled=False))
         self.assertEqual(1, len(alarms))
         self._verify_alarm(json, alarms[0])
 
-    @mock.patch('aodh.keystone_client.get_client')
-    def test_post_gnocchi_aggregation_alarm_project_constraint(self, __):
-        self.CONF.set_override('gnocchi_url', 'http://localhost:8041')
+    def test_post_gnocchi_aggregation_alarm_project_constraint(self):
         json = {
             'enabled': False,
             'name': 'project_constraint',
@@ -2921,40 +2962,37 @@ class TestAlarmsRuleGnocchi(TestAlarmsBase):
             }
         }
 
-        cap_result = mock.Mock(status_code=201,
-                               text=jsonutils.dumps(
-                                   {'aggregation_methods': ['count']}))
-        resource_result = mock.Mock(status_code=200, text="blob")
-        query_check_result = mock.Mock(status_code=200, text="blob")
+        expected_query = {"and": [{"=": {"created_by_project_id":
+                                         self.auth_headers['X-Project-Id']}},
+                                  {"=": {"server_group":
+                                         "my_autoscaling_group"}}]}
 
-        expected_query = ('{"and": [{"=": {"created_by_project_id": "%s"}}, '
-                          '{"=": {"server_group": "my_autoscaling_group"}}]}' %
-                          self.auth_headers['X-Project-Id'])
+        with mock.patch('aodh.api.controllers.v2.alarm_rules.'
+                        'gnocchi.client') as clientlib:
+            c = clientlib.Client.return_value
+            c.capabilities.list.return_value = {
+                'aggregation_methods': ['count']}
+            self.post_json('/alarms', params=json, headers=self.auth_headers)
 
-        with mock.patch('requests.get',
-                        side_effect=[cap_result, resource_result]):
-            with mock.patch('requests.post',
-                            side_effect=[query_check_result]) as fake_post:
-
-                self.post_json('/alarms', params=json,
-                               headers=self.auth_headers)
-
-                self.assertEqual([mock.call(
-                    url=('http://localhost:8041/v1/aggregation/'
-                         'resource/instance/metric/ameter'),
-                    headers={'Content-Type': 'application/json',
-                             'X-Auth-Token': mock.ANY},
-                    params={'aggregation': 'count',
-                            'needed_overlap': 0},
-                    data=expected_query)],
-                    fake_post.mock_calls),
+            self.assertEqual([mock.call(
+                aggregation='count',
+                metrics='ameter',
+                needed_overlap=0,
+                query=expected_query,
+                resource_type="instance")],
+                c.metric.aggregation.mock_calls),
 
         alarms = list(self.alarm_conn.get_alarms(enabled=False))
         self.assertEqual(1, len(alarms))
 
         json['gnocchi_aggregation_by_resources_threshold_rule']['query'] = (
-            expected_query)
+            jsonutils.dumps(expected_query))
         self._verify_alarm(json, alarms[0])
+
+
+class TestAlarmsRuleGnocchiLegacy(LegacyPolicyFileMixin,
+                                  TestAlarmsRuleGnocchi):
+    pass
 
 
 class TestAlarmsEvent(TestAlarmsBase):
@@ -2981,7 +3019,7 @@ class TestAlarmsEvent(TestAlarmsBase):
                              )
         self.alarm_conn.update_alarm(alarm)
 
-        data = self.get_json('/alarms')
+        data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(1, len(data))
         self.assertEqual(set(['event.alarm.1']),
                          set(r['name'] for r in data))

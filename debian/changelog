@@ -1,4 +1,4 @@
-aodh (2.0.0~b1-3) UNRELEASED; urgency=medium
+aodh (2.0.0~b2-1) experimental; urgency=medium
 
   [ Corey Bryant ]
   * d/control: Add python-pymongo to python-aodh depends as aodh-api init

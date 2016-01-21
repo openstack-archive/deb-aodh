@@ -6,6 +6,7 @@ aodh (2.0.0~b2-1) experimental; urgency=medium
   * d/rules: Ensure that alembic files are installed correctly.
 
   [ Thomas Goirand ]
+  * New upstream release.
   * Fix where the alembic files are stored.
 
  -- Thomas Goirand <zigo@debian.org>  Thu, 14 Jan 2016 06:58:06 +0800

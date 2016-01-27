@@ -13,12 +13,15 @@ override_dh_clean:
 	rm -f debian/aodh-common.config debian/aodh-common.postinst debian/aodh-api.config debian/aodh-api.postinst
 
 override_dh_install:
+	rm -rf $(CURDIR)/debian/tmp
+	python2.7 setup.py install --install-layout=deb --root $(CURDIR)/debian/tmp
 	dh_install --fail-missing
 
 	# Manage aodh.conf
 	mkdir -p $(CURDIR)/debian/aodh-common/usr/share/aodh-common
-	oslo-config-generator --output-file $(CURDIR)/debian/aodh-common/usr/share/aodh-common/aodh.conf \
+	PYTHONPATH=$(CURDIR)/debian/tmp/usr/lib/python2.7/dist-packages oslo-config-generator --output-file $(CURDIR)/debian/aodh-common/usr/share/aodh-common/aodh.conf \
 		--namespace aodh \
+		--namespace aodh-auth \
 		--namespace oslo.db \
 		--namespace oslo.log \
 		--namespace oslo.messaging \

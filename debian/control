@@ -64,8 +64,8 @@ Build-Depends-Indep: alembic (>= 0.7.2),
                      subunit,
                      testrepository,
 Standards-Version: 3.9.6
-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=openstack/aodh.git;a=summary
-Vcs-Git: git://anonscm.debian.org/openstack/aodh.git
+Vcs-Browser: https://anonscm.debian.org/gitweb/?p=openstack/aodh.git;a=summary
+Vcs-Git: https://anonscm.debian.org/git/openstack/aodh.git
 Homepage: https://github.com/openstack/aodh
 
 Package: python-aodh

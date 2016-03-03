@@ -5,6 +5,7 @@ aodh (2.0.0~b3-1) experimental; urgency=medium
   * Fixed path of tests when running testr run.
   * Using script in debian to start mongo.
   * Fixed oslo-config-generator namespace list.
+  * Standards-Version: 3.9.7 (no change).
 
  -- Thomas Goirand <zigo@debian.org>  Thu, 03 Mar 2016 23:37:27 +0800
 

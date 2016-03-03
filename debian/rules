@@ -15,7 +15,7 @@ override_dh_clean:
 override_dh_install:
 	rm -rf $(CURDIR)/debian/tmp
 	python2.7 setup.py install --install-layout=deb --root $(CURDIR)/debian/tmp
-	dh_install --fail-missing
+	dh_install --fail-missing -Xusr/etc/aodh/api_paste.ini -Xusr/etc/aodh/policy.json
 
 	# Manage aodh.conf
 	mkdir -p $(CURDIR)/debian/aodh-common/usr/share/aodh-common
@@ -25,6 +25,7 @@ override_dh_install:
 		--namespace oslo.db \
 		--namespace oslo.log \
 		--namespace oslo.messaging \
+		--namespace oslo.middleware.cors \
 		--namespace oslo.policy \
 		--namespace oslo.service.service \
 		--namespace keystonemiddleware.auth_token

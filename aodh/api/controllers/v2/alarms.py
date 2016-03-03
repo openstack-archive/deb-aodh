@@ -371,7 +371,8 @@ class Alarm(base.Base):
         for k in d:
             if k.endswith('_rule'):
                 del d[k]
-        d['rule'] = getattr(self, "%s_rule" % self.type).as_dict()
+        rule = getattr(self, "%s_rule" % self.type)
+        d['rule'] = rule if isinstance(rule, dict) else rule.as_dict()
         if self.time_constraints:
             d['time_constraints'] = [tc.as_dict()
                                      for tc in self.time_constraints]
@@ -529,6 +530,8 @@ class AlarmController(rest.RestController):
 
     def _record_change(self, data, now, on_behalf_of=None, type=None):
         if not pecan.request.cfg.record_history:
+            return
+        if not data:
             return
         type = type or models.AlarmChange.RULE_CHANGE
         scrubbed_data = stringify_timestamps(data)

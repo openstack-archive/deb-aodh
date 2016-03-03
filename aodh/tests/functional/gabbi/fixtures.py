@@ -21,6 +21,7 @@ import uuid
 
 from gabbi import fixture
 import mock
+from oslo_config import cfg
 from oslo_config import fixture as fixture_config
 from oslo_policy import opts
 from six.moves.urllib import parse as urlparse
@@ -44,7 +45,11 @@ class ConfigFixture(fixture.GabbiFixture):
         self.conf = None
 
         # Determine the database connection.
-        db_url = os.environ.get('AODH_TEST_STORAGE_URL')
+        db_url = os.environ.get(
+            'AODH_TEST_STORAGE_URL',
+            os.environ.get(
+                "OVERTEST_URL", 'sqlite://').replace(
+                    "mysql://", "mysql+pymysql://"))
         if not db_url:
             raise case.SkipTest('No database connection configured')
 
@@ -70,12 +75,20 @@ class ConfigFixture(fixture.GabbiFixture):
         conf.set_override('policy_file',
                           os.path.abspath(
                               'aodh/tests/open-policy.json'),
-                          group='oslo_policy')
+                          group='oslo_policy',
+                          enforce_type=True)
+        conf.set_override(
+            'paste_config',
+            os.path.abspath('aodh/tests/functional/gabbi/gabbi_paste.ini'),
+            group='api',
+        )
 
         database_name = '%s-%s' % (db_url, str(uuid.uuid4()))
-        conf.set_override('connection', database_name, group='database')
+        conf.set_override('connection', database_name, group='database',
+                          enforce_type=True)
 
-        conf.set_override('pecan_debug', True, group='api')
+        conf.set_override('pecan_debug', True, group='api',
+                          enforce_type=True)
 
     def stop_fixture(self):
         """Reset the config and remove data."""
@@ -83,3 +96,24 @@ class ConfigFixture(fixture.GabbiFixture):
             storage.get_connection_from_config(self.conf).clear()
             self.conf.reset()
         service.prepare_service = self.prepare_service
+
+
+class CORSConfigFixture(fixture.GabbiFixture):
+    """Inject mock configuration for the CORS middleware."""
+
+    def start_fixture(self):
+        # Here we monkeypatch GroupAttr.__getattr__, necessary because the
+        # paste.ini method of initializing this middleware creates its own
+        # ConfigOpts instance, bypassing the regular config fixture.
+
+        def _mock_getattr(instance, key):
+            if key != 'allowed_origin':
+                return self._original_call_method(instance, key)
+            return "http://valid.example.com"
+
+        self._original_call_method = cfg.ConfigOpts.GroupAttr.__getattr__
+        cfg.ConfigOpts.GroupAttr.__getattr__ = _mock_getattr
+
+    def stop_fixture(self):
+        """Remove the monkeypatch."""
+        cfg.ConfigOpts.GroupAttr.__getattr__ = self._original_call_method

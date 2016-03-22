@@ -1,6 +1,7 @@
 aodh (2.0.0~rc1-1) experimental; urgency=medium
 
   * New upstream release.
+  * Set OS_TEST_PATH=$(CURDIR)/aodh/tests/unit to run unit tests.
 
  -- Thomas Goirand <zigo@debian.org>  Tue, 22 Mar 2016 09:20:30 +0100
 

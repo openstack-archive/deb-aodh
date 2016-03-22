@@ -24,4 +24,4 @@ cat ${MONGO_DATA}/out > /dev/null &
 export AODH_TEST_STORAGE_URL="mongodb://localhost:${MONGO_PORT}/AODH"
 
 # Yield execution to venv command
-$*
+OS_TEST_PATH=./aodh/tests/unit $*

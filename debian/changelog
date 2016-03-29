@@ -1,6 +1,7 @@
 aodh (2.0.0~rc1-2) experimental; urgency=medium
 
   * Not using keystone admin token anymnore to registre endpoints.
+  * Ran debconf-updatepo.
 
  -- Thomas Goirand <zigo@debian.org>  Tue, 29 Mar 2016 12:06:25 +0000
 

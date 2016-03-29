@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: aodh\n"
 "Report-Msgid-Bugs-To: aodh@packages.debian.org\n"
-"POT-Creation-Date: 2015-09-10 20:47+0000\n"
+"POT-Creation-Date: 2016-03-29 12:07+0000\n"
 "PO-Revision-Date: 2012-11-10 23:28+0900\n"
 "Last-Translator: victory <victory.deb@gmail.com>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
@@ -50,7 +50,8 @@ msgstr ""
 #| "which to connect using the Keystone auth token."
 msgid ""
 "Note that you will need to have an up and running Keystone server on which "
-"to connect using the Keystone authentication token."
+"to connect using a known admin project name, admin username and password. "
+"The admin auth token is not used anymore."
 msgstr ""
 "Keystone 認証文字列を使って接続する先の Keystone サーバが必要なことに注意して"
 "ください。"
@@ -77,37 +78,48 @@ msgstr ""
 "Keystone サーバの IP アドレスを入力してください。それにより aodh-api は "
 "Keystone と通信し、Aodh サービスや端末の作成ができるようになります。"
 
-#. Type: password
+#. Type: string
 #. Description
 #: ../aodh-api.templates:4001
 #, fuzzy
 #| msgid "Keystone Auth Token:"
-msgid "Keystone authentication token:"
+msgid "Keystone admin name:"
 msgstr "Keystone 認証文字列:"
 
+#. Type: string
+#. Description
+#. Type: string
+#. Description
 #. Type: password
 #. Description
-#: ../aodh-api.templates:4001
-#, fuzzy
-#| msgid ""
-#| "To configure its endpoint in Keystone, aodh-api needs the Keystone auth "
-#| "token."
+#: ../aodh-api.templates:4001 ../aodh-api.templates:5001
+#: ../aodh-api.templates:6001
 msgid ""
-"To configure its endpoint in Keystone, aodh-api needs the Keystone "
-"authentication token."
+"To register the service endpoint, this package needs to know the Admin "
+"login, name, project name, and password to the Keystone server."
 msgstr ""
-"Keystone で端末を設定するには、aodh-api は Keystone 認証文字列を必要としま"
-"す。"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:5001
+msgid "Keystone admin project name:"
+msgstr ""
+
+#. Type: password
+#. Description
+#: ../aodh-api.templates:6001
+msgid "Keystone admin password:"
+msgstr ""
+
+#. Type: string
+#. Description
+#: ../aodh-api.templates:7001
 msgid "Aodh endpoint IP address:"
 msgstr "Aodh 端末の IP アドレス:"
 
 #. Type: string
 #. Description
-#: ../aodh-api.templates:5001
+#: ../aodh-api.templates:7001
 #, fuzzy
 #| msgid ""
 #| "Enter the IP address that will be used to contact Aodh (eg: the Glance "
@@ -119,7 +131,7 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../aodh-api.templates:5001
+#: ../aodh-api.templates:7001
 msgid ""
 "This IP address should be accessible from the clients that will use this "
 "service, so if you are installing a public cloud, this should be a public IP "
@@ -131,13 +143,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../aodh-api.templates:6001
+#: ../aodh-api.templates:8001
 msgid "Name of the region to register:"
 msgstr "登録する領域の名前:"
 
 #. Type: string
 #. Description
-#: ../aodh-api.templates:6001
+#: ../aodh-api.templates:8001
 #, fuzzy
 #| msgid ""
 #| "Openstack can be used using availability zones, with each region "
@@ -281,6 +293,17 @@ msgstr "認証サーバのパスワード:"
 #: ../aodh-common.templates:9001
 msgid "Please specify the password to use with the authentication server."
 msgstr ""
+
+#, fuzzy
+#~| msgid ""
+#~| "To configure its endpoint in Keystone, aodh-api needs the Keystone auth "
+#~| "token."
+#~ msgid ""
+#~ "To configure its endpoint in Keystone, aodh-api needs the Keystone "
+#~ "authentication token."
+#~ msgstr ""
+#~ "Keystone で端末を設定するには、aodh-api は Keystone 認証文字列を必要としま"
+#~ "す。"
 
 #~ msgid "Pipeline flavor:"
 #~ msgstr "パイプラインの種類:"

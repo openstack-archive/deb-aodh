@@ -2,32 +2,33 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # victory <victory.deb@gmail.com>, 2012.
-# 
+# Takuma Yamada <tyamada@takumayamada.com>, 2016.
+#
 msgid ""
 msgstr ""
 "Project-Id-Version: aodh\n"
 "Report-Msgid-Bugs-To: aodh@packages.debian.org\n"
 "POT-Creation-Date: 2015-09-10 20:47+0000\n"
-"PO-Revision-Date: 2012-11-10 23:28+0900\n"
-"Last-Translator: victory <victory.deb@gmail.com>\n"
+"PO-Revision-Date: 2016-03-17 09:40+0900\n"
+"Last-Translator: Takuma Yamada <tyamada@takumayamada.com>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Gtranslator 2.91.6\n"
 
 #. Type: boolean
 #. Description
 #: ../aodh-api.templates:2001
-#, fuzzy
 #| msgid "Register Aodh in the keystone endpoint catalog?"
 msgid "Register Aodh in the Keystone endpoint catalog?"
-msgstr "Aodh を Keystone の端末リストに登録しますか?"
+msgstr "Aodh を Keystone のエンドポイントのカタログに登録しますか?"
 
 #. Type: boolean
 #. Description
 #: ../aodh-api.templates:2001
-#, fuzzy
 #| msgid ""
 #| "Each Openstack services (each API) should be registered in order to be "
 #| "accessible. This is done using \"keystone service-create\" and \"keystone "
@@ -37,14 +38,13 @@ msgid ""
 "accessible. This is done using \"keystone service-create\" and \"keystone "
 "endpoint-create\". This can be done automatically now."
 msgstr ""
-"OpenStack のサービスごと (API ごと) に、アクセスできるようにするため登録すべ"
-"きです。「keystone service-create」と「keystone endpoint-create」を使って登録"
-"することができます。ここで自動的に行うことができます。"
+"各 OpenStack のサービス (各 API) がアクセスできるようにするために登録する必要"
+"があります。これは「keystone service-create」と「keystone endpoint-create」を"
+"使って行われます。これは自動的に行うことができます。"
 
 #. Type: boolean
 #. Description
 #: ../aodh-api.templates:2001
-#, fuzzy
 #| msgid ""
 #| "Note that you will need to have an up and running keystone server on "
 #| "which to connect using the Keystone auth token."
@@ -52,21 +52,19 @@ msgid ""
 "Note that you will need to have an up and running Keystone server on which "
 "to connect using the Keystone authentication token."
 msgstr ""
-"Keystone 認証文字列を使って接続する先の Keystone サーバが必要なことに注意して"
-"ください。"
+"Keystone 認証トークンを使って接続するには、Keystone サーバの起動および実行が"
+"必要になりますので注意してください。"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:3001
-#, fuzzy
 #| msgid "Keystone IP address:"
 msgid "Keystone server IP address:"
-msgstr "Keystone の IP アドレス:"
+msgstr "Keystone サーバの IP アドレス:"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:3001
-#, fuzzy
 #| msgid ""
 #| "Enter the IP address of your keystone server, so that aodh-api can "
 #| "contact Keystone to do the Aodh service and endpoint creation."
@@ -74,21 +72,19 @@ msgid ""
 "Please enter the IP address of the Keystone server, so that aodh-api can "
 "contact Keystone to do the Aodh service and endpoint creation."
 msgstr ""
-"Keystone サーバの IP アドレスを入力してください。それにより aodh-api は "
-"Keystone と通信し、Aodh サービスや端末の作成ができるようになります。"
+"Keystone サーバの IP アドレスを入力してください。その後、aodh-api は Aodh "
+"サービスやエンドポイント作成を行うための Keystone への接続が可能になります。"
 
 #. Type: password
 #. Description
 #: ../aodh-api.templates:4001
-#, fuzzy
 #| msgid "Keystone Auth Token:"
 msgid "Keystone authentication token:"
-msgstr "Keystone 認証文字列:"
+msgstr "Keystone 認証トークン:"
 
 #. Type: password
 #. Description
 #: ../aodh-api.templates:4001
-#, fuzzy
 #| msgid ""
 #| "To configure its endpoint in Keystone, aodh-api needs the Keystone auth "
 #| "token."
@@ -96,26 +92,23 @@ msgid ""
 "To configure its endpoint in Keystone, aodh-api needs the Keystone "
 "authentication token."
 msgstr ""
-"Keystone で端末を設定するには、aodh-api は Keystone 認証文字列を必要としま"
-"す。"
+"Keystone でエンドポイントを設定するには、aodh-api は Keystone 認証トークンを"
+"必要とします。"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:5001
 msgid "Aodh endpoint IP address:"
-msgstr "Aodh 端末の IP アドレス:"
+msgstr "Aodh エンドポイントの IP アドレス:"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:5001
-#, fuzzy
 #| msgid ""
 #| "Enter the IP address that will be used to contact Aodh (eg: the Glance "
 #| "endpoint IP address)."
 msgid "Please enter the IP address that will be used to contact Aodh."
-msgstr ""
-"Aodh への通信に利用する IP アドレス (例えば Glance 端末の IP アドレス) を入力"
-"してください。"
+msgstr "Aodh への通信に使用される IP アドレスを入力してください。"
 
 #. Type: string
 #. Description
@@ -125,20 +118,19 @@ msgid ""
 "service, so if you are installing a public cloud, this should be a public IP "
 "address."
 msgstr ""
-"この IP アドレスはこのサービスを利用するクライアントからアクセスできないとい"
-"けないので、パブリッククラウドをインストールしている場合、これは公開 IP アド"
-"レスを使うようにしてください。"
+"この IP アドレスは、このサービスを利用するクライアントからアクセス可能でなけ"
+"ればならないので、パブリッククラウドをインストールしている場合、これはパブ"
+"リック IP アドレスでなければなりません。"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:6001
 msgid "Name of the region to register:"
-msgstr "登録する領域の名前:"
+msgstr "登録するリージョンの名前:"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:6001
-#, fuzzy
 #| msgid ""
 #| "Openstack can be used using availability zones, with each region "
 #| "representing a location. Please enter the zone that you wish to use when "
@@ -148,14 +140,15 @@ msgid ""
 "location. Please enter the zone that you wish to use when registering the "
 "endpoint."
 msgstr ""
-"OpenStack は位置を示す各領域による利用可能区分を利用することができます。端末"
-"の登録時に利用したい区分を入力してください。"
+"OpenStack は、場所を表すリージョン毎に、アベイラビリティーゾーンの使用をサ"
+"ポートします。エンドポイントを登録する際に、使用するゾーンを入力してくださ"
+"い。"
 
 #. Type: string
 #. Description
 #: ../aodh-common.templates:2001
 msgid "IP address of your RabbitMQ host:"
-msgstr ""
+msgstr "RabbitMQ ホストの IP アドレス:"
 
 #. Type: string
 #. Description
@@ -169,43 +162,44 @@ msgid ""
 "In order to interoperate with other components of OpenStack, this package "
 "needs to connect to a central RabbitMQ server."
 msgstr ""
+"OpenStack のほかのコンポーネントと相互運用するためには、このパッケージは中央"
+"RabbitMQ サーバに接続する必要があります。"
 
 #. Type: string
 #. Description
 #: ../aodh-common.templates:2001
 msgid "Please specify the IP address of that server."
-msgstr ""
+msgstr "そのサーバの IP アドレスを指定してください。"
 
 #. Type: string
 #. Description
 #: ../aodh-common.templates:3001
 msgid "Username for connection to the RabbitMQ server:"
-msgstr ""
+msgstr "RabbitMQ サーバ接続用のユーザ名"
 
 #. Type: string
 #. Description
 #: ../aodh-common.templates:3001
 msgid "Please specify the username used to connect to the RabbitMQ server."
-msgstr ""
+msgstr "RabbitMQ サーバの接続に使用するユーザ名を指定してください。"
 
 #. Type: password
 #. Description
 #: ../aodh-common.templates:4001
 msgid "Password for connection to the RabbitMQ server:"
-msgstr ""
+msgstr "RabbitMQ サーバ接続用のパスワード:"
 
 #. Type: password
 #. Description
 #: ../aodh-common.templates:4001
 msgid "Please specify the password used to connect to the RabbitMQ server."
-msgstr ""
+msgstr "RabbitMQ サーバの接続に使用されるパスワードを指定してください。"
 
 #. Type: string
 #. Description
 #. Type: string
 #. Description
 #: ../aodh-common.templates:5001 ../aodh-common.templates:6001
-#, fuzzy
 #| msgid "Auth server hostname:"
 msgid "Authentication server hostname:"
 msgstr "認証サーバのホスト名:"
@@ -215,7 +209,6 @@ msgstr "認証サーバのホスト名:"
 #. Type: string
 #. Description
 #: ../aodh-common.templates:5001 ../aodh-common.templates:6001
-#, fuzzy
 #| msgid ""
 #| "Please specify the URL of your Aodh authentication server. Typically this "
 #| "is also the URL of your OpenStack Identity Service (Keystone)."
@@ -223,8 +216,8 @@ msgid ""
 "Please specify the hostname of the authentication server for Aodh. Typically "
 "this is also the hostname of the OpenStack Identity Service (Keystone)."
 msgstr ""
-"Aodh 認証サーバの URL を指定してください。これは通常 OpenStack Identity "
-"Service (Keystone) の URL にもなります。"
+"Aodh 用の認証サーバのホスト名を指定してください。通常これは OpenStack "
+"Identity Service (Keystone) のホスト名と同じです。"
 
 #. Type: string
 #. Description
@@ -236,10 +229,9 @@ msgstr ""
 #. or keep it parenthezised. Example for French:
 #. locataire ("tenant")
 #: ../aodh-common.templates:7001
-#, fuzzy
 #| msgid "Auth server tenant name:"
 msgid "Authentication server tenant name:"
-msgstr "認証サーバの管理用アカウント (tenant) 名"
+msgstr "認証サーバのテナント (tenant) 名"
 
 #. Type: string
 #. Description
@@ -252,12 +244,11 @@ msgstr "認証サーバの管理用アカウント (tenant) 名"
 #. locataire ("tenant")
 #: ../aodh-common.templates:7001
 msgid "Please specify the authentication server tenant name."
-msgstr ""
+msgstr "認証サーバのテナント (tenant) 名を指定してください。"
 
 #. Type: string
 #. Description
 #: ../aodh-common.templates:8001
-#, fuzzy
 #| msgid "Auth server username:"
 msgid "Authentication server username:"
 msgstr "認証サーバのユーザ名:"
@@ -266,12 +257,11 @@ msgstr "認証サーバのユーザ名:"
 #. Description
 #: ../aodh-common.templates:8001
 msgid "Please specify the username to use with the authentication server."
-msgstr ""
+msgstr "認証サーバで使用するユーザ名を指定してください。"
 
 #. Type: password
 #. Description
 #: ../aodh-common.templates:9001
-#, fuzzy
 #| msgid "Auth server password:"
 msgid "Authentication server password:"
 msgstr "認証サーバのパスワード:"
@@ -280,12 +270,11 @@ msgstr "認証サーバのパスワード:"
 #. Description
 #: ../aodh-common.templates:9001
 msgid "Please specify the password to use with the authentication server."
-msgstr ""
+msgstr "認証サーバで使用するパスワードを指定してください。"
 
 #~ msgid "Pipeline flavor:"
 #~ msgstr "パイプラインの種類:"
 
-#, fuzzy
 #~| msgid "Please specify the flavor of pipeline to be used by Aodh."
 #~ msgid "Please specify the flavor of the pipeline to be used by Aodh."
 #~ msgstr "Aodh で利用するパイプラインの種類を指定してください。"
@@ -299,12 +288,10 @@ msgstr ""
 #~ "ることもできます。このサービスを利用しない場合は安全に「caching」だけを選"
 #~ "択してください。"
 
-#, fuzzy
 #~| msgid "Set up a database for aodh?"
 #~ msgid "Set up a database for Aodh?"
 #~ msgstr "aodh 用のデータベースを用意しますか?"
 
-#, fuzzy
 #~| msgid ""
 #~| "No database has been set up for aodh-registry or glance-api to use. "
 #~| "Before continuing, you should make sure you have:"
@@ -316,7 +303,6 @@ msgstr ""
 #~ "aodh-registry または glance-api で利用するデータベースが用意されていませ"
 #~ "ん。続ける前に以下の情報が揃っていることを確認してください:"
 
-#, fuzzy
 #~| msgid ""
 #~| " - the server host name (that server must allow TCP connections from "
 #~| "this\n"
@@ -335,7 +321,6 @@ msgstr ""
 #~ " - データベースにアクセスするためのユーザ名とパスワード\n"
 #~ " - 使いたいデータベースの種類"
 
-#, fuzzy
 #~| msgid ""
 #~| "If some of these requirements are missing, reject this option and run "
 #~| "with regular sqlite support."
@@ -346,7 +331,6 @@ msgstr ""
 #~ "必要な情報が欠けている場合このオプションを却下して標準の SQLite を利用しま"
 #~ "す。"
 
-#, fuzzy
 #~| msgid ""
 #~| "You can change this setting later on by running 'dpkg-reconfigure -plow "
 #~| "aodh-common'."

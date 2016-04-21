@@ -2,13 +2,13 @@
 # Copyright (C) 2015 THE aodh'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the aodh package.
 #
-# Américo Monteiro <a_monteiro@gmx.com>, 2015.
+# Américo Monteiro <a_monteiro@gmx.com>, 2015 - 2016.
 msgid ""
 msgstr ""
-"Project-Id-Version: aodh 1.0.0-5\n"
+"Project-Id-Version: aodh 2.0.0-1\n"
 "Report-Msgid-Bugs-To: aodh@packages.debian.org\n"
 "POT-Creation-Date: 2016-03-29 12:07+0000\n"
-"PO-Revision-Date: 2015-10-20 00:27+0100\n"
+"PO-Revision-Date: 2016-04-16 23:54+0100\n"
 "Last-Translator: Américo Monteiro <a_monteiro@gmx.com>\n"
 "Language-Team: Portuguese <traduz@debianpt.org>\n"
 "Language: pt\n"
@@ -39,7 +39,6 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../aodh-api.templates:2001
-#, fuzzy
 #| msgid ""
 #| "Note that you will need to have an up and running Keystone server on "
 #| "which to connect using the Keystone authentication token."
@@ -49,7 +48,8 @@ msgid ""
 "The admin auth token is not used anymore."
 msgstr ""
 "Note que irá precisar de ter um servidor Keystone a funcionar no qual ligar "
-"usando o sinal de autenticação do Keystone."
+"usando um nome de projecto admin conhecido, nome de utilizador e palavra "
+"passe admin. O token de autenticação admin não é mais utilizado."
 
 #. Type: string
 #. Description
@@ -71,10 +71,9 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../aodh-api.templates:4001
-#, fuzzy
 #| msgid "Keystone authentication token:"
 msgid "Keystone admin name:"
-msgstr "Sinal de autenticação do Keystone:"
+msgstr "Nome de administrador do Keystone:"
 
 #. Type: string
 #. Description
@@ -88,18 +87,20 @@ msgid ""
 "To register the service endpoint, this package needs to know the Admin "
 "login, name, project name, and password to the Keystone server."
 msgstr ""
+"Para registar o endpoint do serviço, este pacote precisa de saber o login de "
+"Admin, o nome, nome do projecto e palavra passe para o servidor Keystone."
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:5001
 msgid "Keystone admin project name:"
-msgstr ""
+msgstr "Nome do projecto admin do Keystone:"
 
 #. Type: password
 #. Description
 #: ../aodh-api.templates:6001
 msgid "Keystone admin password:"
-msgstr ""
+msgstr "Palavra passe admin do Keystone:"
 
 #. Type: string
 #. Description

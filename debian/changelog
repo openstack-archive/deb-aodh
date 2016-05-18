@@ -1,12 +1,14 @@
-aodh (2.0.0-2) UNRELEASED; urgency=medium
+aodh (2.0.0-2) unstable; urgency=medium
 
   [ Ondřej Nový ]
   * Standards-Version is 3.9.8 now (no change)
 
   [ Thomas Goirand ]
   * Updated Portuguese translation for debconf messages (Closes: #821240).
+  * Updated Japanese debconf templates translation (Closes: #820759).
+  * Updated Dutch debconf templates translation (Closes: #823253).
 
- -- Thomas Goirand <zigo@debian.org>  Fri, 22 Apr 2016 00:28:54 +0200
+ -- Thomas Goirand <zigo@debian.org>  Wed, 18 May 2016 11:25:47 +0200
 
 aodh (2.0.0-1) unstable; urgency=medium
 

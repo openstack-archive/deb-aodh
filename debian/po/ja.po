@@ -9,7 +9,7 @@ msgstr ""
 "Project-Id-Version: aodh\n"
 "Report-Msgid-Bugs-To: aodh@packages.debian.org\n"
 "POT-Creation-Date: 2016-03-29 12:07+0000\n"
-"PO-Revision-Date: 2016-03-17 09:40+0900\n"
+"PO-Revision-Date: 2016-04-07 12:10+0900\n"
 "Last-Translator: Takuma Yamada <tyamada@takumayamada.com>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
 "Language: ja\n"
@@ -33,9 +33,9 @@ msgid ""
 "accessible. This is done using \"keystone service-create\" and \"keystone "
 "endpoint-create\". This can be done automatically now."
 msgstr ""
-"各 OpenStack のサービス (各 API) がアクセスできるようにするために登録する必要"
-"があります。これは「keystone service-create」と「keystone endpoint-create」を"
-"使って行われます。これは自動的に行うことができます。"
+"各 OpenStack サービス (各 API) は、アクセス可能にするために登録する必要があり"
+"ます。\"keystone service-create\" と \"keystone endpoint-create\" を使って登"
+"録することができます。ここで自動的に行うことができます。"
 
 #. Type: boolean
 #. Description
@@ -45,8 +45,9 @@ msgid ""
 "to connect using a known admin project name, admin username and password. "
 "The admin auth token is not used anymore."
 msgstr ""
-"Keystone 認証トークンを使って接続するには、Keystone サーバの起動および実行が"
-"必要になりますので注意してください。"
+"既知の管理プロジェクト名、管理者のユーザ名とパスワードを使用して接続するに"
+"は、Keystone サーバの起動および実行が必要になりますので注意してください。管理"
+"者認証トークンはもう使用されていません。"
 
 #. Type: string
 #. Description
@@ -61,14 +62,15 @@ msgid ""
 "Please enter the IP address of the Keystone server, so that aodh-api can "
 "contact Keystone to do the Aodh service and endpoint creation."
 msgstr ""
-"Keystone サーバの IP アドレスを入力してください。その後、aodh-api は Aodh "
-"サービスやエンドポイント作成を行うための Keystone への接続が可能になります。"
+"Keystone サーバの IP アドレスを入力してください。それにより aodh-api は "
+"Keystone と通信し、Aodh サービスやエンドポイントの作成ができるようになりま"
+"す。"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:4001
 msgid "Keystone admin name:"
-msgstr ""
+msgstr "Keystone 管理者名:"
 
 #. Type: string
 #. Description
@@ -82,20 +84,21 @@ msgid ""
 "To register the service endpoint, this package needs to know the Admin "
 "login, name, project name, and password to the Keystone server."
 msgstr ""
-"Keystone でエンドポイントを設定するには、aodh-api は Keystone 認証トークンを"
-"必要とします。"
+"サービスのエンドポイントを登録するには、このパッケージが Keystone サーバへの"
+"管理者ログイン、名前、プロジェクト名、およびパスワードを知っている必要があり"
+"ます。"
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:5001
 msgid "Keystone admin project name:"
-msgstr ""
+msgstr "Keystone 管理プロジェクト名:"
 
 #. Type: password
 #. Description
 #: ../aodh-api.templates:6001
 msgid "Keystone admin password:"
-msgstr ""
+msgstr "Keystone 管理者パスワード:"
 
 #. Type: string
 #. Description
@@ -118,8 +121,8 @@ msgid ""
 "address."
 msgstr ""
 "この IP アドレスは、このサービスを利用するクライアントからアクセス可能でなけ"
-"ればならないので、パブリッククラウドをインストールしている場合、これはパブ"
-"リック IP アドレスでなければなりません。"
+"ればなりません。パブリッククラウドをインストールしている場合は、パブリック "
+"IP アドレスにする必要があります。"
 
 #. Type: string
 #. Description
@@ -170,7 +173,7 @@ msgstr "そのサーバの IP アドレスを指定してください。"
 #. Description
 #: ../aodh-common.templates:3001
 msgid "Username for connection to the RabbitMQ server:"
-msgstr "RabbitMQ サーバ接続用のユーザ名"
+msgstr "RabbitMQ サーバ接続用のユーザ名:"
 
 #. Type: string
 #. Description

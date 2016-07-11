@@ -1,3 +1,9 @@
+aodh (2.0.0-3) UNRELEASED; urgency=medium
+
+  * Updated Danish translation of the debconf templates (Closes: #830646).
+
+ -- Thomas Goirand <zigo@debian.org>  Mon, 11 Jul 2016 14:30:47 +0200
+
 aodh (2.0.0-2) unstable; urgency=medium
 
   [ Ondřej Nový ]

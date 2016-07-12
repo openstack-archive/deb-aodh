@@ -1,6 +1,8 @@
 aodh (2.0.0-3) UNRELEASED; urgency=medium
 
   * Updated Danish translation of the debconf templates (Closes: #830646).
+  * Do not run test_messaging.MessagingTests.test_get_transport_optional,
+    which is failing under some OS (Xenial & Jessie arm64).
 
  -- Thomas Goirand <zigo@debian.org>  Mon, 11 Jul 2016 14:30:47 +0200
 

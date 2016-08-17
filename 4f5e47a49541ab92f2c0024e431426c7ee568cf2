@@ -1,0 +1,9 @@
+Code-Review+2: ZhiQiang Fan <aji.zqfan@gmail.com>
+Code-Review+2: Ryota MIBU <r-mibu@cq.jp.nec.com>
+Workflow+1: Ryota MIBU <r-mibu@cq.jp.nec.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 26 May 2016 15:17:08 +0000
+Reviewed-on: https://review.openstack.org/319290
+Project: openstack/deb-aodh
+Branch: refs/heads/master

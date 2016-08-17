@@ -1,0 +1,9 @@
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: ZhiQiang Fan <aji.zqfan@gmail.com>
+Workflow+1: ZhiQiang Fan <aji.zqfan@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 17 Jun 2016 02:53:05 +0000
+Reviewed-on: https://review.openstack.org/328675
+Project: openstack/deb-aodh
+Branch: refs/heads/master

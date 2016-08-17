@@ -1,0 +1,10 @@
+Code-Review+1: Zhenyu Zheng <zhengzhenyu@huawei.com>
+Code-Review+2: ZhiQiang Fan <aji.zqfan@gmail.com>
+Code-Review+2: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Workflow+1: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 18 Apr 2016 06:13:25 +0000
+Reviewed-on: https://review.openstack.org/306885
+Project: openstack/deb-aodh
+Branch: refs/heads/master

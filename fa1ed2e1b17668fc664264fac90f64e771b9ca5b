@@ -1,0 +1,9 @@
+Code-Review+2: Ryota MIBU <r-mibu@cq.jp.nec.com>
+Code-Review+2: Ildiko Vancsa <ildiko.vancsa@gmail.com>
+Workflow+1: Ildiko Vancsa <ildiko.vancsa@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 05 Jul 2016 02:37:15 +0000
+Reviewed-on: https://review.openstack.org/333656
+Project: openstack/deb-aodh
+Branch: refs/heads/master

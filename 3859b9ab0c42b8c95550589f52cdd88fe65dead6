@@ -1,0 +1,9 @@
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Code-Review+2: liusheng <liusheng2048@gmail.com>
+Workflow+1: liusheng <liusheng2048@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 21 Mar 2016 07:51:42 +0000
+Reviewed-on: https://review.openstack.org/294470
+Project: openstack/deb-aodh
+Branch: refs/heads/master

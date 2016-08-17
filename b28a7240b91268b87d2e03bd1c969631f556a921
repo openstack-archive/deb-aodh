@@ -1,0 +1,9 @@
+Code-Review+2: ZhiQiang Fan <aji.zqfan@gmail.com>
+Code-Review+2: liusheng <liusheng2048@gmail.com>
+Workflow+1: liusheng <liusheng2048@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 30 May 2016 02:48:01 +0000
+Reviewed-on: https://review.openstack.org/322395
+Project: openstack/deb-aodh
+Branch: refs/heads/master

@@ -1,0 +1,10 @@
+Code-Review+2: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Code-Review+1: Xia Linjuan <ljxiash@cn.ibm.com>
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Workflow+1: Julien Danjou <julien@danjou.info>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 29 Mar 2016 08:06:35 +0000
+Reviewed-on: https://review.openstack.org/296877
+Project: openstack/deb-aodh
+Branch: refs/heads/master

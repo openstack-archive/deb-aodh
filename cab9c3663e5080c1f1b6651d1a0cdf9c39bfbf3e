@@ -1,0 +1,9 @@
+Code-Review+2: gordon chung <gord@live.ca>
+Code-Review+2: ZhiQiang Fan <aji.zqfan@gmail.com>
+Workflow+1: ZhiQiang Fan <aji.zqfan@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 18 May 2016 14:22:45 +0000
+Reviewed-on: https://review.openstack.org/317933
+Project: openstack/deb-aodh
+Branch: refs/heads/master

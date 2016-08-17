@@ -1,0 +1,11 @@
+Code-Review+2: Ryota MIBU <r-mibu@cq.jp.nec.com>
+Code-Review+2: liusheng <liusheng2048@gmail.com>
+Workflow+1: liusheng <liusheng2048@gmail.com>
+Code-Review+2: gordon chung <gord@live.ca>
+Workflow+1: gordon chung <gord@live.ca>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 27 May 2016 12:50:44 +0000
+Reviewed-on: https://review.openstack.org/320496
+Project: openstack/deb-aodh
+Branch: refs/heads/master

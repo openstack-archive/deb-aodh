@@ -1,0 +1,9 @@
+Code-Review+2: liusheng <liusheng2048@gmail.com>
+Code-Review+2: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Workflow+1: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 22 Mar 2016 08:52:28 +0000
+Reviewed-on: https://review.openstack.org/295654
+Project: openstack/deb-aodh
+Branch: refs/heads/master

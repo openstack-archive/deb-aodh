@@ -1,0 +1,13 @@
+Code-Review+2: gordon chung <gord@live.ca>
+Code-Review+2: liusheng <liusheng2048@gmail.com>
+Code-Review+2: Ildiko Vancsa <ildiko.vancsa@gmail.com>
+Code-Review+2: Lianhao Lu <lianhao.lu@intel.com>
+Code-Review+1: xiaozhuangqing <zhuangqing.xiao@easystack.cn>
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Workflow+1: Julien Danjou <julien@danjou.info>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 16 Aug 2016 23:38:09 +0000
+Reviewed-on: https://review.openstack.org/348295
+Project: openstack/deb-aodh
+Branch: refs/heads/master

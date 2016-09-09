@@ -1,0 +1,9 @@
+Code-Review+2: gordon chung <gord@live.ca>
+Code-Review+2: Ildiko Vancsa <ildiko.vancsa@gmail.com>
+Workflow+1: Ildiko Vancsa <ildiko.vancsa@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 18 Aug 2016 20:07:50 +0000
+Reviewed-on: https://review.openstack.org/355544
+Project: openstack/deb-aodh
+Branch: refs/heads/master

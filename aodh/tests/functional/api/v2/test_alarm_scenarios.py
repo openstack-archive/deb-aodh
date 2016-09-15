@@ -25,10 +25,12 @@ from oslo_serialization import jsonutils
 import six
 from six import moves
 
+from aodh.cmd import alarm_conversion
 from aodh import messaging
 from aodh.storage import models
 from aodh.tests import constants
 from aodh.tests.functional.api import v2
+from aodh.tests.functional import db as tests_db
 
 
 def default_alarms(auth_headers):
@@ -203,7 +205,7 @@ class TestAlarms(TestAlarmsBase):
     def setUp(self):
         super(TestAlarms, self).setUp()
         for alarm in default_alarms(self.auth_headers):
-            self.alarm_conn.update_alarm(alarm)
+            self.alarm_conn.create_alarm(alarm)
 
     def test_list_alarms(self):
         data = self.get_json('/alarms', headers=self.auth_headers)
@@ -816,10 +818,10 @@ class TestAlarms(TestAlarmsBase):
         else:
             self.fail("Alarm not found")
 
-    def test_post_conflict(self):
+    def test_post_alarm_with_same_name(self):
         json = {
             'enabled': False,
-            'name': 'added_alarm',
+            'name': 'dup_alarm_name',
             'state': 'ok',
             'type': 'threshold',
             'ok_actions': ['http://something/ok'],
@@ -840,10 +842,17 @@ class TestAlarms(TestAlarmsBase):
             }
         }
 
-        self.post_json('/alarms', params=json, status=201,
-                       headers=self.auth_headers)
-        self.post_json('/alarms', params=json, status=409,
-                       headers=self.auth_headers)
+        resp1 = self.post_json('/alarms', params=json, status=201,
+                               headers=self.auth_headers)
+        resp2 = self.post_json('/alarms', params=json, status=201,
+                               headers=self.auth_headers)
+        self.assertEqual(resp1.json['name'], resp2.json['name'])
+        self.assertNotEqual(resp1.json['alarm_id'], resp2.json['alarm_id'])
+        alarms = self.get_json('/alarms',
+                               headers=self.auth_headers,
+                               q=[{'field': 'name',
+                                   'value': 'dup_alarm_name'}])
+        self.assertEqual(2, len(alarms))
 
     def _do_test_post_alarm(self, exclude_outliers=None):
         json = {
@@ -1177,7 +1186,7 @@ class TestAlarms(TestAlarmsBase):
             'enabled': False,
             'name': 'added_alarm',
             'state': 'ok',
-            'type': 'combination',
+            'type': 'gnocchi_resources_threshold',
             'ok_actions': ['http://something/ok'],
             'alarm_actions': ['http://something/alarm'],
             'insufficient_data_actions': ['http://something/no'],
@@ -1199,15 +1208,25 @@ class TestAlarms(TestAlarmsBase):
                               expect_errors=True, status=400,
                               headers=self.auth_headers)
         self.assertEqual(
-            "combination_rule must be set for combination type alarm",
+            "gnocchi_resources_threshold_rule must "
+            "be set for gnocchi_resources_threshold type alarm",
             resp.json['error_message']['faultstring'])
 
     def test_post_alarm_with_duplicate_actions(self):
         body = {
             'name': 'dup-alarm-actions',
-            'type': 'combination',
-            'combination_rule': {
-                'alarm_ids': ['a', 'b'],
+            'type': 'threshold',
+            'threshold_rule': {
+                'meter_name': 'ameter',
+                'query': [{'field': 'metadata.field',
+                           'op': 'eq',
+                           'value': '5',
+                           'type': 'string'}],
+                'comparison_operator': 'le',
+                'statistic': 'count',
+                'threshold': 50,
+                'evaluation_periods': '3',
+                'period': '180',
             },
             'alarm_actions': ['http://no.where', 'http://no.where']
         }
@@ -1219,12 +1238,21 @@ class TestAlarms(TestAlarmsBase):
         self.assertEqual(['http://no.where'], alarms[0].alarm_actions)
 
     def test_post_alarm_with_too_many_actions(self):
-        self.CONF.set_override('alarm_max_actions', 1)
+        self.CONF.set_override('alarm_max_actions', 1, group='api')
         body = {
             'name': 'alarm-with-many-actions',
-            'type': 'combination',
-            'combination_rule': {
-                'alarm_ids': ['a', 'b'],
+            'type': 'threshold',
+            'threshold_rule': {
+                'meter_name': 'ameter',
+                'query': [{'field': 'metadata.field',
+                           'op': 'eq',
+                           'value': '5',
+                           'type': 'string'}],
+                'comparison_operator': 'le',
+                'statistic': 'count',
+                'threshold': 50,
+                'evaluation_periods': '3',
+                'period': '180',
             },
             'alarm_actions': ['http://no.where', 'http://no.where2']
         }
@@ -1237,9 +1265,18 @@ class TestAlarms(TestAlarmsBase):
     def test_post_alarm_normal_user_set_log_actions(self):
         body = {
             'name': 'log_alarm_actions',
-            'type': 'combination',
-            'combination_rule': {
-                'alarm_ids': ['a', 'b'],
+            'type': 'threshold',
+            'threshold_rule': {
+                'meter_name': 'ameter',
+                'query': [{'field': 'metadata.field',
+                           'op': 'eq',
+                           'value': '5',
+                           'type': 'string'}],
+                'comparison_operator': 'le',
+                'statistic': 'count',
+                'threshold': 50,
+                'evaluation_periods': '3',
+                'period': '180',
             },
             'alarm_actions': ['log://']
         }
@@ -1253,9 +1290,18 @@ class TestAlarms(TestAlarmsBase):
     def test_post_alarm_normal_user_set_test_actions(self):
         body = {
             'name': 'test_alarm_actions',
-            'type': 'combination',
-            'combination_rule': {
-                'alarm_ids': ['a', 'b'],
+            'type': 'threshold',
+            'threshold_rule': {
+                'meter_name': 'ameter',
+                'query': [{'field': 'metadata.field',
+                           'op': 'eq',
+                           'value': '5',
+                           'type': 'string'}],
+                'comparison_operator': 'le',
+                'statistic': 'count',
+                'threshold': 50,
+                'evaluation_periods': '3',
+                'period': '180',
             },
             'alarm_actions': ['test://']
         }
@@ -1269,9 +1315,18 @@ class TestAlarms(TestAlarmsBase):
     def test_post_alarm_admin_user_set_log_test_actions(self):
         body = {
             'name': 'admin_alarm_actions',
-            'type': 'combination',
-            'combination_rule': {
-                'alarm_ids': ['a', 'b'],
+            'type': 'threshold',
+            'threshold_rule': {
+                'meter_name': 'ameter',
+                'query': [{'field': 'metadata.field',
+                           'op': 'eq',
+                           'value': '5',
+                           'type': 'string'}],
+                'comparison_operator': 'le',
+                'statistic': 'count',
+                'threshold': 50,
+                'evaluation_periods': '3',
+                'period': '180',
             },
             'alarm_actions': ['test://', 'log://']
         }
@@ -1287,9 +1342,18 @@ class TestAlarms(TestAlarmsBase):
     def test_post_alarm_without_actions(self):
         body = {
             'name': 'alarm_actions_none',
-            'type': 'combination',
-            'combination_rule': {
-                'alarm_ids': ['a', 'b'],
+            'type': 'threshold',
+            'threshold_rule': {
+                'meter_name': 'ameter',
+                'query': [{'field': 'metadata.field',
+                           'op': 'eq',
+                           'value': '5',
+                           'type': 'string'}],
+                'comparison_operator': 'le',
+                'statistic': 'count',
+                'threshold': 50,
+                'evaluation_periods': '3',
+                'period': '180',
             },
             'alarm_actions': None
         }
@@ -1521,12 +1585,9 @@ class TestAlarms(TestAlarmsBase):
         alarm_id = data[0]['alarm_id']
 
         resp = self.put_json('/alarms/%s' % alarm_id,
-                             expect_errors=True, status=409,
                              params=json,
                              headers=self.auth_headers)
-        self.assertEqual(
-            'Alarm with name=name1 exists',
-            resp.json['error_message']['faultstring'])
+        self.assertEqual(200, resp.status_code)
 
     def test_put_invalid_alarm_actions(self):
         json = {
@@ -1657,15 +1718,16 @@ class TestAlarms(TestAlarmsBase):
         }
         endpoint = mock.MagicMock()
         target = oslo_messaging.Target(topic="notifications")
-        listener = messaging.get_notification_listener(
+        listener = messaging.get_batch_notification_listener(
             self.transport, [target], [endpoint])
         listener.start()
         endpoint.info.side_effect = lambda *args: listener.stop()
         self.post_json('/alarms', params=json, headers=self.auth_headers)
         listener.wait()
 
-        class PayloadMatcher(object):
-            def __eq__(self, payload):
+        class NotificationsMatcher(object):
+            def __eq__(self, notifications):
+                payload = notifications[0]['payload']
                 return (payload['detail']['name'] == 'sent_notification' and
                         payload['type'] == 'creation' and
                         payload['detail']['rule']['meter_name'] == 'ameter' and
@@ -1673,10 +1735,10 @@ class TestAlarms(TestAlarmsBase):
                              'project_id', 'timestamp',
                              'user_id']).issubset(payload.keys()))
 
-        endpoint.info.assert_called_once_with(
-            {},
-            'aodh.api', 'alarm.creation',
-            PayloadMatcher(), mock.ANY)
+            def __ne__(self, other):
+                return not self.__eq__(other)
+
+        endpoint.info.assert_called_once_with(NotificationsMatcher())
 
     def test_alarm_sends_notification(self):
         with mock.patch.object(messaging, 'get_notifier') as get_notifier:
@@ -1732,7 +1794,7 @@ class TestAlarmsHistory(TestAlarmsBase):
                                   op='eq',
                                   value=self.auth_headers['X-Project-Id'])
                              ]))
-        self.alarm_conn.update_alarm(alarm)
+        self.alarm_conn.create_alarm(alarm)
 
     def _get_alarm_history(self, alarm_id, auth_headers=None, query=None,
                            expect_errors=False, status=200):
@@ -1970,20 +2032,17 @@ class TestAlarmsHistory(TestAlarmsBase):
         auth = {'X-Roles': 'member',
                 'X-User-Id': str(uuid.uuid4()),
                 'X-Project-Id': str(uuid.uuid4())}
-        history = self._get_alarm_history('a', auth)
-        self.assertEqual([], history)
+        self._get_alarm_history('a', auth_headers=auth,
+                                expect_errors=True, status=404)
 
     def test_delete_alarm_history_after_deletion(self):
-        history = self._get_alarm_history('a')
-        self.assertEqual([], history)
         self._update_alarm('a', dict(name='renamed'))
         history = self._get_alarm_history('a')
         self.assertEqual(1, len(history))
         self.delete('/alarms/%s' % 'a',
                     headers=self.auth_headers,
                     status=204)
-        history = self._get_alarm_history('a')
-        self.assertEqual(0, len(history))
+        self._get_alarm_history('a', expect_errors=True, status=404)
 
     def test_get_alarm_history_ordered_by_recentness(self):
         for i in moves.xrange(10):
@@ -2069,10 +2128,7 @@ class TestAlarmsHistory(TestAlarmsBase):
                          history[0]['detail'])
 
     def test_get_nonexistent_alarm_history(self):
-        # the existence of alarm history is independent of the
-        # continued existence of the alarm itself
-        history = self._get_alarm_history('foobar')
-        self.assertEqual([], history)
+        self._get_alarm_history('foobar', expect_errors=True, status=404)
 
 
 class TestAlarmsHistoryLegacy(LegacyPolicyFileMixin, TestAlarmsHistory):
@@ -2117,31 +2173,31 @@ class TestAlarmsQuotas(TestAlarmsBase):
         self.assertEqual(1, len(alarms))
 
     def test_alarms_quotas(self):
-        self.CONF.set_override('user_alarm_quota', 1)
-        self.CONF.set_override('project_alarm_quota', 1)
+        self.CONF.set_override('user_alarm_quota', 1, 'api')
+        self.CONF.set_override('project_alarm_quota', 1, 'api')
         self._test_alarm_quota()
 
     def test_project_alarms_quotas(self):
-        self.CONF.set_override('project_alarm_quota', 1)
+        self.CONF.set_override('project_alarm_quota', 1, 'api')
         self._test_alarm_quota()
 
     def test_user_alarms_quotas(self):
-        self.CONF.set_override('user_alarm_quota', 1)
+        self.CONF.set_override('user_alarm_quota', 1, 'api')
         self._test_alarm_quota()
 
     def test_larger_limit_project_alarms_quotas(self):
-        self.CONF.set_override('user_alarm_quota', 1)
-        self.CONF.set_override('project_alarm_quota', 2)
+        self.CONF.set_override('user_alarm_quota', 1, 'api')
+        self.CONF.set_override('project_alarm_quota', 2, 'api')
         self._test_alarm_quota()
 
     def test_larger_limit_user_alarms_quotas(self):
-        self.CONF.set_override('user_alarm_quota', 2)
-        self.CONF.set_override('project_alarm_quota', 1)
+        self.CONF.set_override('user_alarm_quota', 2, 'api')
+        self.CONF.set_override('project_alarm_quota', 1, 'api')
         self._test_alarm_quota()
 
     def test_larger_limit_user_alarm_quotas_multitenant_user(self):
-        self.CONF.set_override('user_alarm_quota', 2)
-        self.CONF.set_override('project_alarm_quota', 1)
+        self.CONF.set_override('user_alarm_quota', 2, 'api')
+        self.CONF.set_override('project_alarm_quota', 1, 'api')
 
         def _test(field, value):
             query = [{
@@ -2392,8 +2448,9 @@ class TestAlarmsRuleCombination(TestAlarmsBase):
 
     def setUp(self):
         super(TestAlarmsRuleCombination, self).setUp()
+        self.CONF.set_override("enable_combination_alarms", True, "api")
         for alarm in default_alarms(self.auth_headers):
-            self.alarm_conn.update_alarm(alarm)
+            self.alarm_conn.create_alarm(alarm)
 
     def test_get_alarm_combination(self):
         alarms = self.get_json('/alarms',
@@ -2856,7 +2913,7 @@ class TestAlarmsRuleGnocchi(TestAlarmsBase):
 
                 ]:
 
-            self.alarm_conn.update_alarm(alarm)
+            self.alarm_conn.create_alarm(alarm)
 
     def test_list_alarms(self):
         data = self.get_json('/alarms', headers=self.auth_headers)
@@ -3040,7 +3097,7 @@ class TestAlarmsEvent(TestAlarmsBase):
                              rule=dict(event_type='event.test',
                                        query=[]),
                              )
-        self.alarm_conn.update_alarm(alarm)
+        self.alarm_conn.create_alarm(alarm)
 
         data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(1, len(data))
@@ -3164,7 +3221,7 @@ class TestAlarmsCompositeRule(TestAlarmsBase):
                              time_constraints=[],
                              rule=self.rule,
                              )
-        self.alarm_conn.update_alarm(alarm)
+        self.alarm_conn.create_alarm(alarm)
 
         data = self.get_json('/alarms', headers=self.auth_headers)
         self.assertEqual(1, len(data))
@@ -3241,3 +3298,167 @@ class TestAlarmsCompositeRule(TestAlarmsBase):
                        "float'>', got '<type 'bool'>'")
         self.assertEqual(faultstring,
                          response.json['error_message']['faultstring'])
+
+
+@tests_db.run_with('mysql', 'pgsql', 'sqlite')
+class TestPaginationQuery(TestAlarmsBase):
+    def setUp(self):
+        super(TestPaginationQuery, self).setUp()
+        for alarm in default_alarms(self.auth_headers):
+            self.alarm_conn.create_alarm(alarm)
+
+    def test_pagination_query_single_sort(self):
+        data = self.get_json('/alarms?sort=name:desc',
+                             headers=self.auth_headers)
+        names = [a['name'] for a in data]
+        self.assertEqual(['name4', 'name3', 'name2', 'name1'], names)
+        data = self.get_json('/alarms?sort=name:asc',
+                             headers=self.auth_headers)
+        names = [a['name'] for a in data]
+        self.assertEqual(['name1', 'name2', 'name3', 'name4'], names)
+
+    def test_sort_by_severity_with_its_value(self):
+        data = self.get_json('/alarms?sort=severity:asc',
+                             headers=self.auth_headers)
+        severities = [a['severity'] for a in data]
+        self.assertEqual(['low', 'moderate', 'critical', 'critical'],
+                         severities)
+        data = self.get_json('/alarms?sort=severity:desc',
+                             headers=self.auth_headers)
+        severities = [a['severity'] for a in data]
+        self.assertEqual(['critical', 'critical', 'moderate', 'low'],
+                         severities)
+
+    def test_pagination_query_limit(self):
+        data = self.get_json('/alarms?limit=2',  headers=self.auth_headers)
+        self.assertEqual(2, len(data))
+
+    def test_pagination_query_limit_sort(self):
+        data = self.get_json('/alarms?sort=name:asc&limit=2',
+                             headers=self.auth_headers)
+        self.assertEqual(2, len(data))
+
+    def test_pagination_query_marker(self):
+        data = self.get_json('/alarms?sort=name:desc',
+                             headers=self.auth_headers)
+        self.assertEqual(4, len(data))
+        alarm_ids = [a['alarm_id'] for a in data]
+        names = [a['name'] for a in data]
+        self.assertEqual(['name4', 'name3', 'name2', 'name1'], names)
+        marker_url = ('/alarms?sort=name:desc&marker=%s' % alarm_ids[1])
+        data = self.get_json(marker_url, headers=self.auth_headers)
+        self.assertEqual(2, len(data))
+        new_alarm_ids = [a['alarm_id'] for a in data]
+        self.assertEqual(alarm_ids[2:], new_alarm_ids)
+        new_names = [a['name'] for a in data]
+        self.assertEqual(['name2', 'name1'], new_names)
+
+    def test_pagination_query_multiple_sorts(self):
+        new_alarms = default_alarms(self.auth_headers)
+        for a_id in zip(new_alarms, ['e', 'f', 'g', 'h']):
+            a_id[0].alarm_id = a_id[1]
+            self.alarm_conn.create_alarm(a_id[0])
+        data = self.get_json('/alarms', headers=self.auth_headers)
+        self.assertEqual(8, len(data))
+        sort_url = '/alarms?sort=name:desc&sort=alarm_id:asc'
+        data = self.get_json(sort_url, headers=self.auth_headers)
+        name_ids = [(a['name'], a['alarm_id']) for a in data]
+        expected = [('name4', 'd'), ('name4', 'h'), ('name3', 'c'),
+                    ('name3', 'g'), ('name2', 'b'), ('name2', 'f'),
+                    ('name1', 'a'), ('name1', 'e')]
+        self.assertEqual(expected, name_ids)
+
+    def test_pagination_query_invalid_sort_key(self):
+        resp = self.get_json('/alarms?sort=invalid_key:desc',
+                             headers=self.auth_headers,
+                             expect_errors=True)
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual("Invalid input for field/attribute sort. Value: "
+                         "'invalid_key:desc'. the sort parameter should be"
+                         " a pair of sort key and sort dir combined with "
+                         "':', or only sort key specified and sort dir will "
+                         "be default 'asc', the supported sort keys are: "
+                         "('alarm_id', 'enabled', 'name', 'type', 'severity',"
+                         " 'timestamp', 'user_id', 'project_id', 'state', "
+                         "'repeat_actions', 'state_timestamp')",
+                         jsonutils.loads(resp.body)['error_message']
+                         ['faultstring'])
+
+    def test_pagination_query_only_sort_key_specified(self):
+        data = self.get_json('/alarms?sort=name',
+                             headers=self.auth_headers)
+        names = [a['name'] for a in data]
+        self.assertEqual(['name1', 'name2', 'name3', 'name4'], names)
+
+    def test_pagination_query_history_data(self):
+        for i in moves.xrange(10):
+            self._update_alarm('a', dict(name='%s' % i))
+        url = '/alarms/a/history?sort=event_id:desc&sort=timestamp:desc'
+        data = self.get_json(url, headers=self.auth_headers)
+        sorted_data = sorted(data,
+                             key=lambda d: (d['event_id'], d['timestamp']),
+                             reverse=True)
+        self.assertEqual(sorted_data, data)
+
+
+class TestCombinationCompositeConversion(TestAlarmsBase):
+    def setUp(self):
+        super(TestCombinationCompositeConversion, self).setUp()
+        alarms = default_alarms(self.auth_headers)
+        for alarm in alarms:
+            self.alarm_conn.create_alarm(alarm)
+        com_parameters = alarms[3].as_dict()
+        com_parameters.update(dict(name='name5', alarm_id='e', description='e',
+                                   rule=dict(alarm_ids=['b', 'c'],
+                                             operator='and')))
+        combin1 = models.Alarm(**com_parameters)
+        self.alarm_conn.create_alarm(combin1)
+        com_parameters.update(dict(name='name6', alarm_id='f', description='f',
+                                   rule=dict(alarm_ids=['d', 'e'],
+                                             operator='and')))
+        combin2 = models.Alarm(**com_parameters)
+        self.alarm_conn.create_alarm(combin2)
+
+    def test_conversion_without_combination_deletion(self):
+        data = self.get_json('/alarms', headers=self.auth_headers)
+        self.assertEqual(6, len(data))
+        url = '/alarms?q.field=type&q.op=eq&q.value=combination'
+        combination_alarms = self.get_json(url, headers=self.auth_headers)
+        self.assertEqual(3, len(combination_alarms))
+        test_args = alarm_conversion.get_parser().parse_args([])
+        with mock.patch('__builtin__.raw_input', return_value='yes'):
+            with mock.patch('argparse.ArgumentParser.parse_args',
+                            return_value=test_args):
+                alarm_conversion.conversion()
+        url = '/alarms?q.field=type&q.op=eq&q.value=composite'
+        composite_alarms = self.get_json(url, headers=self.auth_headers)
+        self.assertEqual(3, len(composite_alarms))
+        url = '/alarms?q.field=type&q.op=eq&q.value=combination'
+        combination_alarms = self.get_json(url, headers=self.auth_headers)
+        self.assertEqual(3, len(combination_alarms))
+
+    def test_conversion_with_combination_deletion(self):
+        test_args = alarm_conversion.get_parser().parse_args(
+            ['--delete-combination-alarm', 'True'])
+        with mock.patch('__builtin__.raw_input', return_value='yes'):
+            with mock.patch('argparse.ArgumentParser.parse_args',
+                            return_value=test_args):
+                alarm_conversion.conversion()
+        url = '/alarms?q.field=type&q.op=eq&q.value=composite'
+        composite_alarms = self.get_json(url, headers=self.auth_headers)
+        self.assertEqual(3, len(composite_alarms))
+        url = '/alarms?q.field=type&q.op=eq&q.value=combination'
+        combination_alarms = self.get_json(url, headers=self.auth_headers)
+        self.assertEqual(0, len(combination_alarms))
+
+    def test_conversion_with_alarm_specified(self):
+        test_args = alarm_conversion.get_parser().parse_args(
+            ['--alarm-id', 'e'])
+        with mock.patch('__builtin__.raw_input', return_value='yes'):
+            with mock.patch('argparse.ArgumentParser.parse_args',
+                            return_value=test_args):
+                alarm_conversion.conversion()
+        url = '/alarms?q.field=type&q.op=eq&q.value=composite'
+        composite_alarms = self.get_json(url, headers=self.auth_headers)
+        self.assertEqual(1, len(composite_alarms))
+        self.assertEqual('From-combination: e', composite_alarms[0]['name'])

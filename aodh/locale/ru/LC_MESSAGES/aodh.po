@@ -4,12 +4,13 @@
 #
 # Translators:
 # Altinbek <altinbek.089@mail.ru>, 2015
-# OpenStack Infra <zanata@openstack.org>, 2015. #zanata
+# Lucas Palm <lapalm@us.ibm.com>, 2015. #zanata
+# Andreas Jaeger <jaegerandi@gmail.com>, 2016. #zanata
 msgid ""
 msgstr ""
-"Project-Id-Version: aodh 2.0.0.0b2.dev28\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2016-01-18 11:09+0000\n"
+"Project-Id-Version: aodh 3.0.0.0b3.dev7\n"
+"Report-Msgid-Bugs-To: https://bugs.launchpad.net/openstack-i18n/\n"
+"POT-Creation-Date: 2016-08-05 09:48+0000\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -22,10 +23,6 @@ msgstr ""
 "Generated-By: Babel 2.0\n"
 "X-Generator: Zanata 3.7.3\n"
 "Language-Team: Russian\n"
-
-#, python-format
-msgid "%(entity)s %(id)s Not Found"
-msgstr "%(entity)s %(id)s  не найдены"
 
 #, python-format
 msgid "%(name)s count exceeds maximum value %(maximum)d"
@@ -44,10 +41,8 @@ msgid "%d datapoints are unknown"
 msgstr "%d исходный код данных не известен"
 
 #, python-format
-msgid "Action %(scheme)s for alarm %(alarm_id)s is unknown, cannot notify"
-msgstr ""
-"Без определения типа сигнала уведомленияn %(scheme)s не возможно "
-"действовать  %(alarm_id)s "
+msgid "%s is not JSON serializable"
+msgstr "%s не является сериализуемым с помощью JSON"
 
 #, python-format
 msgid "Alarm %(alarm_id)s not found in project %(project)s"
@@ -79,22 +74,8 @@ msgstr ""
 "%(period)s  секунду"
 
 #, python-format
-msgid "Alarm with name=%s exists"
-msgstr "Сигнализация с именем=%s  существует"
-
-#, python-format
-msgid "Alarm with name='%s' exists"
-msgstr "Сигнализация с названием='%s' существует"
-
-#, python-format
 msgid "Alarms %(alarm_ids)s are in unknown state"
 msgstr "Сигнализация %(alarm_ids)s в не корректном состоянии"
-
-#, python-format
-msgid "Cannot create table %(table_name)s   it already exists. Ignoring error"
-msgstr ""
-"Не удается создать таблицу %(table_name)s, она уже существует. Игнорирование "
-"ошибки"
 
 #, python-format
 msgid "Cannot specify alarm %s itself in combination rule"
@@ -103,9 +84,6 @@ msgstr "Не указывать  сигнал тревоги %s  в комбин
 #, python-format
 msgid "Combined state of alarms %s"
 msgstr "смешанное  состояние тревоги %s"
-
-msgid "Configuration:"
-msgstr "Конфигурация: "
 
 #, python-format
 msgid "Connecting to %(db)s on %(nodelist)s"
@@ -152,16 +130,6 @@ msgstr ""
 "влияние на действие %(action)s"
 
 #, python-format
-msgid ""
-"Notifying alarm %(alarm_name)s %(alarm_id)s with severity %(severity)s from "
-"%(previous)s to %(current)s with action %(action)s because %(reason)s. "
-"request-id: %(request_id)s "
-msgstr ""
-"сигналом тревоги %(alarm_name)s %(alarm_id)s не работает  %(severity)s "
-"потому что %(previous)s причина %(current)s  в действиях %(action)s "
-"%(reason)s   Запрос-ID:  %(request_id)s"
-
-#, python-format
 msgid "Order-by expression not valid: %s"
 msgstr "вызов значения не активна: %s"
 
@@ -178,10 +146,6 @@ msgid "Remaining as %(state)s due to alarms %(alarm_ids)s in state %(state)s"
 msgstr ""
 "Оставаясь %(state)s в состоянии уведомления %(state)s из-за тревоги "
 "%(alarm_ids)s"
-
-#, python-format
-msgid "Starting server in PID %s"
-msgstr "сервер начинается с PID %s"
 
 #, python-format
 msgid "String %s is not a valid isotime"
@@ -227,18 +191,6 @@ msgstr ""
 "%(type)s."
 
 #, python-format
-msgid "Unable to notify alarm %s"
-msgstr "Невозможно оповещать о тревоге %s"
-
-msgid "Unable to notify for an alarm with no action"
-msgstr "Невозможно оповещать о тревоге, без действия на него"
-
-#, python-format
-msgid "Unable to parse action %(action)s for alarm %(alarm_id)s"
-msgstr ""
-"Невозможно разобраться в действиях %(action)s в сигнализации %(alarm_id)s"
-
-#, python-format
 msgid "Unable to parse action %s"
 msgstr "Невозможно разобрать действий %s"
 
@@ -278,14 +230,6 @@ msgstr "дублирующие действия найдены в: %s, удал�
 #, python-format
 msgid "initiating evaluation cycle on %d alarms"
 msgstr "приступим к оценке цикла  %d alarms"
-
-#, python-format
-msgid "serving on 0.0.0.0:%(sport)s, view at http://127.0.0.1:%(vport)s"
-msgstr "услуга на 0.0.0.0:%(sport)s, указывает на http://127.0.0.1:%(vport)s"
-
-#, python-format
-msgid "serving on http://%(host)s:%(port)s"
-msgstr "указатели на http://%(host)s:%(port)s"
 
 msgid "state invalid"
 msgstr "Неправильное состояние"

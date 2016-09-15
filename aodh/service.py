@@ -14,8 +14,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-import socket
-
+from keystoneauth1 import loading as ka_loading
 from oslo_config import cfg
 from oslo_db import options as db_options
 import oslo_i18n
@@ -28,11 +27,6 @@ from aodh import messaging
 
 
 OPTS = [
-    cfg.StrOpt('host',
-               default=socket.gethostname(),
-               help='Name of this node, which must be valid in an AMQP '
-               'key. Can be an opaque identifier. For ZeroMQ only, must '
-               'be a valid host name, FQDN, or IP address.'),
     cfg.IntOpt('http_timeout',
                default=600,
                help='Timeout seconds for HTTP requests. Set it to None to '
@@ -41,10 +35,31 @@ OPTS = [
                default=60,
                help='Period of evaluation cycle, should'
                ' be >= than configured pipeline interval for'
-               ' collection of underlying meters.',
-               deprecated_group='alarm',
-               deprecated_opts=[cfg.DeprecatedOpt(
-                   'threshold_evaluation_interval', group='alarm')]),
+               ' collection of underlying meters.'),
+]
+
+EVALUATOR_OPTS = [
+    cfg.IntOpt('workers',
+               default=1,
+               min=1,
+               help='Number of workers for evaluator service. '
+               'default value is 1.')
+]
+
+NOTIFIER_OPTS = [
+    cfg.IntOpt('workers',
+               default=1,
+               min=1,
+               help='Number of workers for notifier service. '
+               'default value is 1.')
+]
+
+LISTENER_OPTS = [
+    cfg.IntOpt('workers',
+               default=1,
+               min=1,
+               help='Number of workers for listener service. '
+                    'default value is 1.')
 ]
 
 
@@ -53,7 +68,7 @@ def prepare_service(argv=None, config_files=None):
     oslo_i18n.enable_lazy()
     log.register_options(conf)
     log_levels = (conf.default_log_levels +
-                  ['stevedore=INFO', 'keystoneclient=INFO'])
+                  ['futurist=INFO', 'keystoneclient=INFO'])
     log.set_defaults(default_log_levels=log_levels)
     defaults.set_cors_middleware_defaults()
     db_options.set_defaults(conf)
@@ -68,7 +83,7 @@ def prepare_service(argv=None, config_files=None):
     conf(argv, project='aodh', validate_default_values=True,
          default_config_files=config_files)
 
-    keystone_client.setup_keystoneauth(conf)
+    ka_loading.load_auth_from_conf_options(conf, "service_credentials")
     log.setup(conf, 'aodh')
     messaging.setup()
     return conf

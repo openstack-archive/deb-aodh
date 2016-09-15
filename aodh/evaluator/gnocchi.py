@@ -14,22 +14,19 @@
 # under the License.
 
 from gnocchiclient import client
-from oslo_config import cfg
 from oslo_log import log
 from oslo_serialization import jsonutils
 
 from aodh.evaluator import threshold
-from aodh.i18n import _
+from aodh.i18n import _LW
 from aodh import keystone_client
 
 LOG = log.getLogger(__name__)
 
-OPTS = [
-    cfg.StrOpt('gnocchi_url',
-               deprecated_group="alarm",
-               deprecated_for_removal=True,
-               help='URL to Gnocchi. default: autodetection'),
-]
+# The list of points that Gnocchi API returned is composed
+# of tuples with (timestamp, granularity, value)
+GRANULARITY = 1
+VALUE = 2
 
 
 class GnocchiBase(threshold.ThresholdEvaluator):
@@ -38,8 +35,7 @@ class GnocchiBase(threshold.ThresholdEvaluator):
         self._gnocchi_client = client.Client(
             '1', keystone_client.get_session(conf),
             interface=conf.service_credentials.interface,
-            region_name=conf.service_credentials.region_name,
-            endpoint_override=conf.gnocchi_url)
+            region_name=conf.service_credentials.region_name)
 
     @staticmethod
     def _sanitize(rule, statistics):
@@ -50,8 +46,8 @@ class GnocchiBase(threshold.ThresholdEvaluator):
         # but not a stddev-of-stddevs).
         # TODO(sileht): support alarm['exclude_outliers']
         LOG.debug('sanitize stats %s', statistics)
-        statistics = [stats[2] for stats in statistics
-                      if stats[1] == rule['granularity']]
+        statistics = [stats[VALUE] for stats in statistics
+                      if stats[GRANULARITY] == rule['granularity']]
         statistics = statistics[-rule['evaluation_periods']:]
         LOG.debug('pruned statistics to %d', len(statistics))
         return statistics
@@ -65,20 +61,30 @@ class GnocchiResourceThresholdEvaluator(GnocchiBase):
                 start=start, stop=end,
                 resource_id=rule['resource_id'],
                 aggregation=rule['aggregation_method'])
-        except Exception:
-            LOG.exception(_('alarm stats retrieval failed'))
+        except Exception as e:
+            LOG.warning(_LW('alarm stats retrieval failed: %s'),
+                        e)
             return []
 
 
 class GnocchiAggregationMetricsThresholdEvaluator(GnocchiBase):
     def _statistics(self, rule, start, end):
         try:
+            # FIXME(sileht): In case of a heat autoscaling stack decide to
+            # delete an instance, the gnocchi metrics associated to this
+            # instance will be no more updated and when the alarm will ask
+            # for the aggregation, gnocchi will raise a 'No overlap'
+            # exception.
+            # So temporary set 'needed_overlap' to 0 to disable the
+            # gnocchi checks about missing points. For more detail see:
+            #   https://bugs.launchpad.net/gnocchi/+bug/1479429
             return self._gnocchi_client.metric.aggregation(
                 metrics=rule['metrics'],
                 start=start, stop=end,
-                aggregation=rule['aggregation_method'])
-        except Exception:
-            LOG.exception(_('alarm stats retrieval failed'))
+                aggregation=rule['aggregation_method'],
+                needed_overlap=0)
+        except Exception as e:
+            LOG.warning(_LW('alarm stats retrieval failed: %s'), e)
             return []
 
 
@@ -101,6 +107,6 @@ class GnocchiAggregationResourcesThresholdEvaluator(GnocchiBase):
                 aggregation=rule['aggregation_method'],
                 needed_overlap=0,
             )
-        except Exception:
-            LOG.exception(_('alarm stats retrieval failed'))
+        except Exception as e:
+            LOG.warning(_LW('alarm stats retrieval failed: %s'), e)
             return []

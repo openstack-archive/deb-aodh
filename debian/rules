@@ -15,7 +15,7 @@ override_dh_clean:
 override_dh_install:
 	rm -rf $(CURDIR)/debian/tmp
 	python2.7 setup.py install --install-layout=deb --root $(CURDIR)/debian/tmp
-	dh_install --fail-missing -Xusr/etc/aodh/api_paste.ini -Xusr/etc/aodh/policy.json
+	dh_install --fail-missing -Xusr/etc/aodh/api_paste.ini -Xusr/etc/aodh/policy.json -Xusr/etc/aodh/aodh-config-generator.conf
 
 	# Manage aodh.conf
 	mkdir -p $(CURDIR)/debian/aodh-common/usr/share/aodh-common

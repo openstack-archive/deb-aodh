@@ -31,7 +31,7 @@ import wsmeext.pecan as wsme_pecan
 from aodh.api.controllers.v2 import alarms
 from aodh.api.controllers.v2 import base
 from aodh.api import rbac
-from aodh.i18n import _
+from aodh.i18n import _, _LE
 from aodh.storage import models
 
 LOG = log.getLogger(__name__)
@@ -330,7 +330,7 @@ class ValidatedComplexQuery(object):
             date_time = date_time.replace(tzinfo=None)
             return date_time
         except ValueError:
-            LOG.exception(_("String %s is not a valid isotime") % isotime)
+            LOG.exception(_LE("String %s is not a valid isotime"), isotime)
             msg = _('Failed to parse the timestamp value %s') % isotime
             raise base.ClientSideError(msg)
 
@@ -357,7 +357,7 @@ class QueryAlarmHistoryController(rest.RestController):
         query = ValidatedComplexQuery(body,
                                       models.AlarmChange)
         query.validate(visibility_field="on_behalf_of")
-        conn = pecan.request.alarm_storage_conn
+        conn = pecan.request.storage
         return [alarms.AlarmChange.from_db_model(s)
                 for s in conn.query_alarm_history(query.filter_expr,
                                                   query.orderby,
@@ -383,7 +383,7 @@ class QueryAlarmsController(rest.RestController):
         query = ValidatedComplexQuery(body,
                                       models.Alarm)
         query.validate(visibility_field="project_id")
-        conn = pecan.request.alarm_storage_conn
+        conn = pecan.request.storage
         return [alarms.Alarm.from_db_model(s)
                 for s in conn.query_alarms(query.filter_expr,
                                            query.orderby,

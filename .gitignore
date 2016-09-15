@@ -14,10 +14,12 @@ cover/*
 dist/*
 doc/build
 doc/source/api/
+doc/source/_static/
 etc/aodh/aodh.conf
 subunit.log
-tools/lintstack.head.py
-tools/pylint_exceptions
+
+# Files created by install-guide build
+install-guide/build
 
 # Files created by releasenotes build
 releasenotes/build

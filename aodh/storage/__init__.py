@@ -35,11 +35,6 @@ OPTS = [
                default=-1,
                help=("Number of seconds that alarm histories are kept "
                      "in the database for (<= 0 means forever).")),
-    cfg.StrOpt('alarm_connection',
-               secret=True,
-               deprecated_for_removal=True,
-               help='The connection string used to connect '
-               'to the alarm database - rather use ${database.connection}'),
 ]
 
 
@@ -47,12 +42,21 @@ class StorageBadVersion(Exception):
     """Error raised when the storage backend version is not good enough."""
 
 
+class AlarmNotFound(Exception):
+    """Error raised when the needed resource not found."""
+
+    def __init__(self, alarm_id):
+        self.alarm_id = alarm_id
+        super(AlarmNotFound, self).__init__("Alarm %s not found" % alarm_id)
+
+
+class InvalidMarker(Exception):
+    """Invalid pagination marker parameters"""
+
+
 def get_connection_from_config(conf):
     retries = conf.database.max_retries
-    if conf.database.alarm_connection is None:
-        url = conf.database.connection
-    else:
-        url = conf.database.alarm_connection
+    url = conf.database.connection
     connection_scheme = urlparse.urlparse(url).scheme
     if connection_scheme not in ('mysql', 'mysql+pymysql', 'postgresql',
                                  'sqlite'):

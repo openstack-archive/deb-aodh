@@ -1,9 +1,6 @@
 #
 # Copyright Ericsson AB 2013. All rights reserved
 #
-# Authors: Ildiko Vancsa <ildiko.vancsa@ericsson.com>
-#          Balazs Gibizer <balazs.gibizer@ericsson.com>
-#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -15,7 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
-"""Tests complex queries for samples
+"""Tests complex queries for alarms
 """
 
 import datetime
@@ -24,6 +21,7 @@ from oslo_utils import timeutils
 
 from aodh.storage import models
 from aodh.tests.functional.api import v2 as tests_api
+from aodh.tests.functional import db as tests_db
 
 
 admin_header = {"X-Roles": "admin",
@@ -73,7 +71,7 @@ class TestQueryAlarmsController(tests_api.FunctionalTest):
                                                            'value':
                                                            project_id}]),
                                          severity='critical')
-                    self.alarm_conn.update_alarm(alarm)
+                    self.alarm_conn.create_alarm(alarm)
 
     def test_query_all(self):
         data = self.post_json(self.alarm_url,
@@ -168,8 +166,8 @@ class TestQueryAlarmsController(tests_api.FunctionalTest):
                                       '{"=": {"project": "project-id2"}}'})
 
         self.assertEqual(6, len(data.json))
-        for sample_item in data.json:
-            self.assertIn(sample_item['project_id'], set(["project-id2"]))
+        for alarm_item in data.json:
+            self.assertIn(alarm_item['project_id'], set(["project-id2"]))
 
     def test_query_with_field_user_in_orderby(self):
         data = self.post_json(self.alarm_url,
@@ -196,6 +194,28 @@ class TestQueryAlarmsController(tests_api.FunctionalTest):
                          [a["state_timestamp"] for a in data.json])
         for alarm in data.json:
             self.assertEqual("alarm", alarm["state"])
+
+    @tests_db.run_with('mysql', 'pgsql', 'sqlite')
+    def test_query_with_orderby_severity(self):
+        orderby = '[{"severity": "ASC"}]'
+        data = self.post_json(self.alarm_url,
+                              headers=admin_header,
+                              params={"orderby": orderby})
+        alarms = list(data.json)
+        severities = [a['severity'] for a in alarms]
+        severity_choices = ['low', 'moderate', 'critical']
+        sorted_severities = sorted(severities, key=severity_choices.index)
+        self.assertEqual(sorted_severities, severities)
+
+        orderby = '[{"severity": "DESC"}]'
+        data = self.post_json(self.alarm_url,
+                              headers=admin_header,
+                              params={"orderby": orderby})
+        alarms = list(data.json)
+        severities = [a['severity'] for a in alarms]
+        sorted_severities = sorted(severities, key=severity_choices.index,
+                                   reverse=True)
+        self.assertEqual(sorted_severities, severities)
 
     def test_limit_should_be_positive(self):
         data = self.post_json(self.alarm_url,

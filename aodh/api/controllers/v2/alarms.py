@@ -43,7 +43,7 @@ from aodh.api.controllers.v2.alarm_rules import combination
 from aodh.api.controllers.v2 import base
 from aodh.api.controllers.v2 import utils as v2_utils
 from aodh.api import rbac
-from aodh.i18n import _
+from aodh.i18n import _, _LI, _LE
 from aodh import keystone_client
 from aodh import messaging
 from aodh import notifier
@@ -54,16 +54,16 @@ LOG = log.getLogger(__name__)
 
 ALARM_API_OPTS = [
     cfg.IntOpt('user_alarm_quota',
-               deprecated_group="alarm",
+               deprecated_group='DEFAULT',
                help='Maximum number of alarms defined for a user.'
                ),
     cfg.IntOpt('project_alarm_quota',
-               deprecated_group="alarm",
+               deprecated_group='DEFAULT',
                help='Maximum number of alarms defined for a project.'
                ),
     cfg.IntOpt('alarm_max_actions',
                default=-1,
-               deprecated_group="alarm",
+               deprecated_group='DEFAULT',
                help='Maximum count of actions for each state of an alarm, '
                     'non-positive number means no limit.'),
 ]
@@ -96,14 +96,14 @@ def is_over_quota(conn, project_id, user_id):
     over_quota = False
 
     # Start by checking for user quota
-    user_alarm_quota = pecan.request.cfg.user_alarm_quota
+    user_alarm_quota = pecan.request.cfg.api.user_alarm_quota
     if user_alarm_quota is not None:
         user_alarms = list(conn.get_alarms(user=user_id))
         over_quota = len(user_alarms) >= user_alarm_quota
 
     # If the user quota isn't reached, we check for the project quota
     if not over_quota:
-        project_alarm_quota = pecan.request.cfg.project_alarm_quota
+        project_alarm_quota = pecan.request.cfg.api.project_alarm_quota
         if project_alarm_quota is not None:
             project_alarms = list(conn.get_alarms(project=project_id))
             over_quota = len(project_alarms) >= project_alarm_quota
@@ -289,6 +289,10 @@ class Alarm(base.Base):
 
     @staticmethod
     def check_rule(alarm):
+        if (not pecan.request.cfg.api.enable_combination_alarms
+           and alarm.type == 'combination'):
+            raise base.ClientSideError("Unavailable alarm type")
+
         rule = '%s_rule' % alarm.type
         if getattr(alarm, rule) in (wtypes.Unset, None):
             error = _("%(rule)s must be set for %(type)s"
@@ -308,7 +312,7 @@ class Alarm(base.Base):
 
     @staticmethod
     def check_alarm_actions(alarm):
-        max_actions = pecan.request.cfg.alarm_max_actions
+        max_actions = pecan.request.cfg.api.alarm_max_actions
         for state in state_kind:
             actions_name = state.replace(" ", "_") + '_actions'
             actions = getattr(alarm, actions_name)
@@ -317,8 +321,8 @@ class Alarm(base.Base):
 
             action_set = set(actions)
             if len(actions) != len(action_set):
-                LOG.info(_('duplicate actions are found: %s, '
-                           'remove duplicate ones') % actions)
+                LOG.info(_LI('duplicate actions are found: %s, '
+                             'remove duplicate ones'), actions)
                 actions = list(action_set)
                 setattr(alarm, actions_name, actions)
 
@@ -355,10 +359,10 @@ class Alarm(base.Base):
                    user_id="c96c887c216949acbdfbd8b494863567",
                    project_id="c96c887c216949acbdfbd8b494863567",
                    enabled=True,
-                   timestamp=datetime.datetime.utcnow(),
+                   timestamp=datetime.datetime(2015, 1, 1, 12, 0, 0, 0),
                    state="ok",
                    severity="moderate",
-                   state_timestamp=datetime.datetime.utcnow(),
+                   state_timestamp=datetime.datetime(2015, 1, 1, 12, 0, 0, 0),
                    ok_actions=["http://site:8000/ok"],
                    alarm_actions=["http://site:8000/alarm"],
                    insufficient_data_actions=["http://site:8000/nodata"],
@@ -430,8 +434,7 @@ class Alarm(base.Base):
         auth_plugin = pecan.request.environ.get('keystone.token_auth')
         url = netutils.urlsplit(action)
         if self._is_trust_url(url) and url.password:
-            keystone_client.delete_trust_id(pecan.request.cfg,
-                                            url.username, auth_plugin)
+            keystone_client.delete_trust_id(url.username, auth_plugin)
 
 
 Alarm.add_attributes(**{"%s_rule" % ext.name: ext.plugin
@@ -477,7 +480,7 @@ class AlarmChange(base.Base):
                    user_id="3e5d11fda79448ac99ccefb20be187ca",
                    project_id="b6f16144010811e387e4de429e99ee8c",
                    on_behalf_of="92159030020611e3b26dde429e99ee8c",
-                   timestamp=datetime.datetime.utcnow(),
+                   timestamp=datetime.datetime(2015, 1, 1, 12, 0, 0, 0),
                    )
 
 
@@ -510,15 +513,13 @@ class AlarmController(rest.RestController):
         pecan.request.context['alarm_id'] = alarm_id
         self._id = alarm_id
 
-    def _alarm(self, rbac_directive):
-        self.conn = pecan.request.alarm_storage_conn
-
+    def _enforce_rbac(self, rbac_directive):
         # TODO(sileht): We should be able to relax this since we
         # pass the alarm object to the enforcer.
         auth_project = rbac.get_limited_to_project(pecan.request.headers,
                                                    pecan.request.enforcer)
-        alarms = list(self.conn.get_alarms(alarm_id=self._id,
-                                           project=auth_project))
+        alarms = list(pecan.request.storage.get_alarms(alarm_id=self._id,
+                                                       project=auth_project))
         if not alarms:
             raise base.AlarmNotFound(alarm=self._id, auth_project=auth_project)
         alarm = alarms[0]
@@ -551,7 +552,7 @@ class AlarmController(rest.RestController):
                        severity=severity)
 
         try:
-            self.conn.record_alarm_change(payload)
+            pecan.request.storage.record_alarm_change(payload)
         except aodh.NotImplementedError:
             pass
 
@@ -562,7 +563,7 @@ class AlarmController(rest.RestController):
     @wsme_pecan.wsexpose(Alarm)
     def get(self):
         """Return this alarm."""
-        return Alarm.from_db_model(self._alarm('get_alarm'))
+        return Alarm.from_db_model(self._enforce_rbac('get_alarm'))
 
     @wsme_pecan.wsexpose(Alarm, body=Alarm)
     def put(self, data):
@@ -572,7 +573,7 @@ class AlarmController(rest.RestController):
         """
 
         # Ensure alarm exists
-        alarm_in = self._alarm('change_alarm')
+        alarm_in = self._enforce_rbac('change_alarm')
 
         now = timeutils.utcnow()
 
@@ -594,15 +595,6 @@ class AlarmController(rest.RestController):
         else:
             data.state_timestamp = alarm_in.state_timestamp
 
-        # make sure alarms are unique by name per project.
-        if alarm_in.name != data.name:
-            alarms = list(self.conn.get_alarms(name=data.name,
-                                               project=data.project_id))
-            if alarms:
-                raise base.ClientSideError(
-                    _("Alarm with name=%s exists") % data.name,
-                    status_code=409)
-
         ALARMS_RULES[data.type].plugin.update_hook(data)
 
         old_data = Alarm.from_db_model(alarm_in)
@@ -612,10 +604,10 @@ class AlarmController(rest.RestController):
         try:
             alarm_in = models.Alarm(**updated_alarm)
         except Exception:
-            LOG.exception(_("Error while putting alarm: %s") % updated_alarm)
+            LOG.exception(_LE("Error while putting alarm: %s"), updated_alarm)
             raise base.ClientSideError(_("Alarm incorrect"))
 
-        alarm = self.conn.update_alarm(alarm_in)
+        alarm = pecan.request.storage.update_alarm(alarm_in)
 
         change = dict((k, v) for k, v in updated_alarm.items()
                       if v != old_alarm[k] and k not in
@@ -628,22 +620,23 @@ class AlarmController(rest.RestController):
         """Delete this alarm."""
 
         # ensure alarm exists before deleting
-        alarm = self._alarm('delete_alarm')
-        self.conn.delete_alarm(alarm.alarm_id)
+        alarm = self._enforce_rbac('delete_alarm')
+        pecan.request.storage.delete_alarm(alarm.alarm_id)
         alarm_object = Alarm.from_db_model(alarm)
         alarm_object.delete_actions()
 
-    @wsme_pecan.wsexpose([AlarmChange], [base.Query])
-    def history(self, q=None):
+    @wsme_pecan.wsexpose([AlarmChange], [base.Query], [str], int, str)
+    def history(self, q=None, sort=None, limit=None, marker=None):
         """Assembles the alarm history requested.
 
         :param q: Filter rules for the changes to be described.
+        :param sort: A list of pairs of sort key and sort dir.
+        :param limit: The maximum number of items to be return.
+        :param marker: The pagination query marker.
         """
 
-        target = rbac.target_from_segregation_rule(
-            pecan.request.headers, pecan.request.enforcer)
-        rbac.enforce('alarm_history', pecan.request.headers,
-                     pecan.request.enforcer, target)
+        # Ensure alarm exists
+        self._enforce_rbac('alarm_history')
 
         q = q or []
         # allow history to be returned for deleted alarms, but scope changes
@@ -651,9 +644,12 @@ class AlarmController(rest.RestController):
         # avoid inappropriate cross-tenant visibility of alarm history
         auth_project = rbac.get_limited_to_project(pecan.request.headers,
                                                    pecan.request.enforcer)
-        conn = pecan.request.alarm_storage_conn
+        conn = pecan.request.storage
         kwargs = v2_utils.query_to_kwargs(
             q, conn.get_alarm_changes, ['on_behalf_of', 'alarm_id'])
+        if sort or limit or marker:
+            kwargs['pagination'] = v2_utils.get_pagination_options(
+                sort, limit, marker, models.AlarmChange)
         return [AlarmChange.from_db_model(ac)
                 for ac in conn.get_alarm_changes(self._id, auth_project,
                                                  **kwargs)]
@@ -666,7 +662,7 @@ class AlarmController(rest.RestController):
         :param state: an alarm state within the request body.
         """
 
-        alarm = self._alarm('change_alarm_state')
+        alarm = self._enforce_rbac('change_alarm_state')
 
         # note(sileht): body are not validated by wsme
         # Workaround for https://bugs.launchpad.net/wsme/+bug/1227229
@@ -675,7 +671,7 @@ class AlarmController(rest.RestController):
         now = timeutils.utcnow()
         alarm.state = state
         alarm.state_timestamp = now
-        alarm = self.conn.update_alarm(alarm)
+        alarm = pecan.request.storage.update_alarm(alarm)
         change = {'state': alarm.state}
         self._record_change(change, now, on_behalf_of=alarm.project_id,
                             type=models.AlarmChange.STATE_TRANSITION)
@@ -684,7 +680,7 @@ class AlarmController(rest.RestController):
     @wsme_pecan.wsexpose(state_kind_enum)
     def get_state(self):
         """Get the state of this alarm."""
-        return self._alarm('get_alarm_state').state
+        return self._enforce_rbac('get_alarm_state').state
 
 
 class AlarmsController(rest.RestController):
@@ -732,7 +728,7 @@ class AlarmsController(rest.RestController):
         rbac.enforce('create_alarm', pecan.request.headers,
                      pecan.request.enforcer, {})
 
-        conn = pecan.request.alarm_storage_conn
+        conn = pecan.request.storage
         now = timeutils.utcnow()
 
         data.alarm_id = str(uuid.uuid4())
@@ -767,18 +763,11 @@ class AlarmsController(rest.RestController):
         change = data.as_dict(models.Alarm)
 
         data.update_actions()
-        # make sure alarms are unique by name per project.
-        alarms = list(conn.get_alarms(name=data.name,
-                                      project=data.project_id))
-        if alarms:
-            raise base.ClientSideError(
-                _("Alarm with name='%s' exists") % data.name,
-                status_code=409)
 
         try:
             alarm_in = models.Alarm(**change)
         except Exception:
-            LOG.exception(_("Error while posting alarm: %s") % change)
+            LOG.exception(_LE("Error while posting alarm: %s"), change)
             raise base.ClientSideError(_("Alarm incorrect"))
 
         alarm = conn.create_alarm(alarm_in)
@@ -786,11 +775,14 @@ class AlarmsController(rest.RestController):
         v2_utils.set_resp_location_hdr("/v2/alarms/" + alarm.alarm_id)
         return Alarm.from_db_model(alarm)
 
-    @wsme_pecan.wsexpose([Alarm], [base.Query])
-    def get_all(self, q=None):
+    @wsme_pecan.wsexpose([Alarm], [base.Query], [str], int, str)
+    def get_all(self, q=None, sort=None, limit=None, marker=None):
         """Return all alarms, based on the query provided.
 
         :param q: Filter rules for the alarms to be returned.
+        :param sort: A list of pairs of sort key and sort dir.
+        :param limit: The maximum number of items to be return.
+        :param marker: The pagination query marker.
         """
         target = rbac.target_from_segregation_rule(
             pecan.request.headers, pecan.request.enforcer)
@@ -800,7 +792,10 @@ class AlarmsController(rest.RestController):
         q = q or []
         # Timestamp is not supported field for Simple Alarm queries
         kwargs = v2_utils.query_to_kwargs(
-            q, pecan.request.alarm_storage_conn.get_alarms,
+            q, pecan.request.storage.get_alarms,
             allow_timestamps=False)
+        if sort or limit or marker:
+            kwargs['pagination'] = v2_utils.get_pagination_options(
+                sort, limit, marker, models.Alarm)
         return [Alarm.from_db_model(m)
-                for m in pecan.request.alarm_storage_conn.get_alarms(**kwargs)]
+                for m in pecan.request.storage.get_alarms(**kwargs)]

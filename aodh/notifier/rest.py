@@ -14,14 +14,15 @@
 # under the License.
 """Rest alarm notifier."""
 
+import uuid
+
 from oslo_config import cfg
-from oslo_context import context
 from oslo_log import log
 from oslo_serialization import jsonutils
 import requests
 import six.moves.urllib.parse as urlparse
 
-from aodh.i18n import _
+from aodh.i18n import _LI
 from aodh import notifier
 
 LOG = log.getLogger(__name__)
@@ -29,23 +30,22 @@ LOG = log.getLogger(__name__)
 OPTS = [
     cfg.StrOpt('rest_notifier_certificate_file',
                default='',
-               deprecated_group="alarm",
-               help='SSL Client certificate for REST notifier.'
+               help='SSL Client certificate file for REST notifier.'
                ),
     cfg.StrOpt('rest_notifier_certificate_key',
                default='',
-               deprecated_group="alarm",
-               help='SSL Client private key for REST notifier.'
+               help='SSL Client private key file for REST notifier.'
+               ),
+    cfg.StrOpt('rest_notifier_ca_bundle_certificate_path',
+               help='SSL CA_BUNDLE certificate for REST notifier',
                ),
     cfg.BoolOpt('rest_notifier_ssl_verify',
                 default=True,
-                deprecated_group="alarm",
                 help='Whether to verify the SSL Server certificate when '
                 'calling alarm action.'
                 ),
     cfg.IntOpt('rest_notifier_max_retries',
                default=0,
-               deprecated_group="alarm",
                help='Number of retries for REST notifier',
                ),
 
@@ -62,10 +62,11 @@ class RestAlarmNotifier(notifier.AlarmNotifier):
     def notify(self, action, alarm_id, alarm_name, severity, previous,
                current, reason, reason_data, headers=None):
         headers = headers or {}
-        if not headers.get('x-openstack-request-id'):
-            headers['x-openstack-request-id'] = context.generate_request_id()
+        if 'x-openstack-request-id' not in headers:
+            headers['x-openstack-request-id'] = b'req-' + str(
+                uuid.uuid4()).encode('ascii')
 
-        LOG.info(_(
+        LOG.info(_LI(
             "Notifying alarm %(alarm_name)s %(alarm_id)s with severity"
             " %(severity)s from %(previous)s to %(current)s with action "
             "%(action)s because %(reason)s. request-id: %(request_id)s ") %
@@ -86,6 +87,8 @@ class RestAlarmNotifier(notifier.AlarmNotifier):
             options = urlparse.parse_qs(action.query)
             verify = bool(int(options.get('aodh-alarm-ssl-verify',
                                           [default_verify])[-1]))
+            if verify and self.conf.rest_notifier_ca_bundle_certificate_path:
+                verify = self.conf.rest_notifier_ca_bundle_certificate_path
             kwargs['verify'] = verify
 
             cert = self.conf.rest_notifier_certificate_file
@@ -101,4 +104,8 @@ class RestAlarmNotifier(notifier.AlarmNotifier):
         session = requests.Session()
         session.mount(action.geturl(),
                       requests.adapters.HTTPAdapter(max_retries=max_retries))
-        session.post(action.geturl(), **kwargs)
+        resp = session.post(action.geturl(), **kwargs)
+        LOG.info(_LI('Notifying alarm <%(id)s> gets response: %(status_code)s '
+                     '%(reason)s.'), {'id': alarm_id,
+                                      'status_code': resp.status_code,
+                                      'reason': resp.reason})

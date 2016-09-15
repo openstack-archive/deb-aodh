@@ -1,9 +1,6 @@
 #
 # Copyright Ericsson AB 2013. All rights reserved
 #
-# Authors: Ildiko Vancsa <ildiko.vancsa@ericsson.com>
-#          Balazs Gibizer <balazs.gibizer@ericsson.com>
-#
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
 # a copy of the License at
@@ -17,10 +14,11 @@
 # under the License.
 """Common functions for MongoDB backend
 """
-
 import pymongo
 import six
 
+import aodh
+from aodh import storage
 from aodh.storage import base
 from aodh.storage import models
 from aodh.storage.mongo import utils as pymongo_utils
@@ -56,22 +54,26 @@ class Connection(base.Connection):
         if 'alarm_history' not in self.db.conn.collection_names():
             self.db.conn.create_collection('alarm_history')
 
-    def update_alarm(self, alarm):
+    def update_alarm(self, alarm, upsert=False):
         """Update alarm."""
         data = alarm.as_dict()
 
         self.db.alarm.update(
             {'alarm_id': alarm.alarm_id},
             {'$set': data},
-            upsert=True)
+            upsert=upsert)
 
-        stored_alarm = self.db.alarm.find({'alarm_id': alarm.alarm_id})[0]
+        alarms_found = self.db.alarm.find({'alarm_id': alarm.alarm_id})
+        if alarms_found.count() == 0:
+            raise storage.AlarmNotFound(alarm.alarm_id)
+        stored_alarm = alarms_found[0]
         del stored_alarm['_id']
         self._ensure_encapsulated_rule_format(stored_alarm)
         self._ensure_time_constraints(stored_alarm)
         return models.Alarm(**stored_alarm)
 
-    create_alarm = update_alarm
+    def create_alarm(self, alarm):
+        return self.update_alarm(alarm, upsert=True)
 
     def delete_alarm(self, alarm_id):
         """Delete an alarm and its history data."""
@@ -84,7 +86,8 @@ class Connection(base.Connection):
 
     def get_alarms(self, name=None, user=None, state=None, meter=None,
                    project=None, enabled=None, alarm_id=None,
-                   alarm_type=None, severity=None, exclude=None):
+                   alarm_type=None, severity=None, exclude=None,
+                   pagination=None):
         """Yields a lists of alarms that match filters.
 
         :param name: Optional name for alarm.
@@ -97,7 +100,10 @@ class Connection(base.Connection):
         :param alarm_type: Optional alarm type.
         :param severity: Optional alarm severity.
         :param exclude: Optional dict for inequality constraint.
+        :param pagination: Pagination query parameters.
         """
+        if pagination:
+            raise aodh.NotImplementedError('Pagination query not implemented')
         q = {}
         if user is not None:
             q['user_id'] = user
@@ -130,7 +136,7 @@ class Connection(base.Connection):
                           user=None, project=None, alarm_type=None,
                           severity=None, start_timestamp=None,
                           start_timestamp_op=None, end_timestamp=None,
-                          end_timestamp_op=None):
+                          end_timestamp_op=None, pagination=None):
         """Yields list of AlarmChanges describing alarm history
 
         Changes are always sorted in reverse order of occurrence, given
@@ -154,7 +160,10 @@ class Connection(base.Connection):
         :param start_timestamp_op: Optional timestamp start range operation
         :param end_timestamp: Optional modified timestamp end range
         :param end_timestamp_op: Optional timestamp end range operation
+        :param pagination: Pagination query parameters.
         """
+        if pagination:
+            raise aodh.NotImplementedError('Pagination query not implemented')
         q = dict(alarm_id=alarm_id)
         if on_behalf_of is not None:
             q['on_behalf_of'] = on_behalf_of

@@ -1,6 +1,6 @@
 #
 # Copyright 2012 New Dream Network, LLC (DreamHost)
-# Copyright 2015 Red Hat, Inc.
+# Copyright 2015-2016 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -14,19 +14,16 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
 import os
 
 from oslo_config import cfg
 from oslo_log import log
 from paste import deploy
 import pecan
-from werkzeug import serving
 
 from aodh.api import hooks
 from aodh.api import middleware
-from aodh.i18n import _
-from aodh.i18n import _LW
+from aodh.i18n import _LI
 from aodh import service
 from aodh import storage
 
@@ -52,16 +49,9 @@ def setup_app(pecan_config=PECAN_CONFIG, conf=None):
 
     pecan.configuration.set_config(dict(pecan_config), overwrite=True)
 
-    # NOTE(sileht): pecan debug won't work in multi-process environment
-    pecan_debug = conf.api.pecan_debug
-    if conf.api.workers != 1 and pecan_debug:
-        pecan_debug = False
-        LOG.warning(_LW('pecan_debug cannot be enabled, if workers is > 1, '
-                        'the value is overrided with False'))
-
     app = pecan.make_app(
         pecan_config['app']['root'],
-        debug=pecan_debug,
+        debug=conf.api.pecan_debug,
         hooks=app_hooks,
         wrap_app=middleware.ParsableErrorMiddleware,
         guess_content_type_from_ext=False
@@ -81,29 +71,12 @@ def load_app(conf):
 
     if not cfg_file:
         raise cfg.ConfigFilesNotFoundError([conf.api.paste_config])
-    LOG.info("Full WSGI config used: %s" % cfg_file)
+    LOG.info(_LI("Full WSGI config used: %s"), cfg_file)
     return deploy.loadapp("config:" + cfg_file)
 
 
-def build_server(conf):
-    app = load_app(conf)
-    # Create the WSGI server and start it
-    host, port = conf.api.host, conf.api.port
-
-    LOG.info(_('Starting server in PID %s') % os.getpid())
-    LOG.info(_("Configuration:"))
-    conf.log_opt_values(LOG, logging.INFO)
-
-    if host == '0.0.0.0':
-        LOG.info(_(
-            'serving on 0.0.0.0:%(sport)s, view at http://127.0.0.1:%(vport)s')
-            % ({'sport': port, 'vport': port}))
-    else:
-        LOG.info(_("serving on http://%(host)s:%(port)s") % (
-                 {'host': host, 'port': port}))
-
-    serving.run_simple(host, port,
-                       app, processes=conf.api.workers)
+def build_wsgi_app(argv=None):
+    return load_app(service.prepare_service(argv=argv))
 
 
 def _app():

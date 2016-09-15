@@ -17,11 +17,14 @@
 import abc
 import datetime
 import json
+import threading
 
+from concurrent import futures
+import cotyledon
 import croniter
+from futurist import periodics
 from oslo_config import cfg
 from oslo_log import log
-from oslo_service import service as os_service
 from oslo_utils import timeutils
 import pytz
 import six
@@ -30,11 +33,10 @@ import uuid
 
 import aodh
 from aodh import coordination
-from aodh.i18n import _
+from aodh.i18n import _LI, _LE, _LW
 from aodh import keystone_client
 from aodh import messaging
 from aodh import queue
-from aodh import rpc
 from aodh import storage
 from aodh.storage import models
 
@@ -48,7 +50,6 @@ ALARM = 'alarm'
 OPTS = [
     cfg.BoolOpt('record_history',
                 default=True,
-                deprecated_group="alarm",
                 help='Record alarm change events.'
                 ),
 ]
@@ -60,10 +61,7 @@ class Evaluator(object):
 
     def __init__(self, conf):
         self.conf = conf
-        if conf.ipc_protocol == 'rpc':
-            self.notifier = rpc.RPCAlarmNotifier(self.conf)
-        else:
-            self.notifier = queue.AlarmNotifier(self.conf)
+        self.notifier = queue.AlarmNotifier(self.conf)
         self.storage_conn = None
         self._ks_client = None
         self._alarm_change_notifier = None
@@ -80,11 +78,12 @@ class Evaluator(object):
             self.storage_conn = storage.get_connection_from_config(self.conf)
         return self.storage_conn
 
-    def _record_change(self, alarm):
+    def _record_change(self, alarm, reason):
         if not self.conf.record_history:
             return
         type = models.AlarmChange.STATE_TRANSITION
-        detail = json.dumps({'state': alarm.state})
+        detail = json.dumps({'state': alarm.state,
+                             'transition_reason': reason})
         user_id, project_id = self.ks_client.user_id, self.ks_client.project_id
         on_behalf_of = alarm.project_id
         now = timeutils.utcnow()
@@ -115,18 +114,25 @@ class Evaluator(object):
             previous = alarm.state
             alarm.state = state
             if previous != state or always_record:
-                LOG.info(_('alarm %(id)s transitioning to %(state)s because '
-                           '%(reason)s') % {'id': alarm.alarm_id,
-                                            'state': state,
-                                            'reason': reason})
-
-                self._storage_conn.update_alarm(alarm)
-                self._record_change(alarm)
-            self.notifier.notify(alarm, previous, reason, reason_data)
+                LOG.info(_LI('alarm %(id)s transitioning to %(state)s because '
+                             '%(reason)s'), {'id': alarm.alarm_id,
+                                             'state': state,
+                                             'reason': reason})
+                try:
+                    self._storage_conn.update_alarm(alarm)
+                except storage.AlarmNotFound:
+                    LOG.warning(_LW("Skip updating this alarm's state, the"
+                                    "alarm: %s has been deleted"),
+                                alarm.alarm_id)
+                else:
+                    self._record_change(alarm, reason)
+                self.notifier.notify(alarm, previous, reason, reason_data)
+            elif alarm.repeat_actions:
+                self.notifier.notify(alarm, previous, reason, reason_data)
         except Exception:
             # retry will occur naturally on the next evaluation
             # cycle (unless alarm state reverts in the meantime)
-            LOG.exception(_('alarm state update failed'))
+            LOG.exception(_LE('alarm state update failed'))
 
     @classmethod
     def within_time_constraint(cls, alarm):
@@ -176,41 +182,71 @@ class Evaluator(object):
         """
 
 
-class AlarmEvaluationService(os_service.Service):
+class AlarmEvaluationService(cotyledon.Service):
 
     PARTITIONING_GROUP_NAME = "alarm_evaluator"
     EVALUATOR_EXTENSIONS_NAMESPACE = "aodh.evaluator"
 
-    def __init__(self, conf):
-        super(AlarmEvaluationService, self).__init__()
+    def __init__(self, worker_id, conf):
+        super(AlarmEvaluationService, self).__init__(worker_id)
         self.conf = conf
-        self.storage_conn = None
-        self._load_evaluators()
-        self.partition_coordinator = coordination.PartitionCoordinator(
-            conf.coordination.backend_url)
 
-    @property
-    def _storage_conn(self):
-        if not self.storage_conn:
-            self.storage_conn = storage.get_connection_from_config(self.conf)
-        return self.storage_conn
+        ef = lambda: futures.ThreadPoolExecutor(max_workers=10)
+        self.periodic = periodics.PeriodicWorker.create(
+            [], executor_factory=ef)
 
-    def _load_evaluators(self):
         self.evaluators = extension.ExtensionManager(
             namespace=self.EVALUATOR_EXTENSIONS_NAMESPACE,
             invoke_on_load=True,
             invoke_args=(self.conf,)
         )
+        self.storage_conn = storage.get_connection_from_config(self.conf)
+
+        self.partition_coordinator = coordination.PartitionCoordinator(
+            self.conf)
+        self.partition_coordinator.start()
+        self.partition_coordinator.join_group(self.PARTITIONING_GROUP_NAME)
+
+        # allow time for coordination if necessary
+        delay_start = self.partition_coordinator.is_active()
+
+        if self.evaluators:
+            @periodics.periodic(spacing=self.conf.evaluation_interval,
+                                run_immediately=not delay_start)
+            def evaluate_alarms():
+                self._evaluate_assigned_alarms()
+
+            self.periodic.add(evaluate_alarms)
+
+        if self.partition_coordinator.is_active():
+            heartbeat_interval = min(self.conf.coordination.heartbeat,
+                                     self.conf.evaluation_interval / 4)
+
+            @periodics.periodic(spacing=heartbeat_interval,
+                                run_immediately=True)
+            def heartbeat():
+                self.partition_coordinator.heartbeat()
+
+            self.periodic.add(heartbeat)
+
+        t = threading.Thread(target=self.periodic.start)
+        t.daemon = True
+        t.start()
+
+    def terminate(self):
+        self.periodic.stop()
+        self.partition_coordinator.stop()
+        self.periodic.wait()
 
     def _evaluate_assigned_alarms(self):
         try:
             alarms = self._assigned_alarms()
-            LOG.info(_('initiating evaluation cycle on %d alarms') %
+            LOG.info(_LI('initiating evaluation cycle on %d alarms'),
                      len(alarms))
             for alarm in alarms:
                 self._evaluate_alarm(alarm)
         except Exception:
-            LOG.exception(_('alarm evaluation cycle failed'))
+            LOG.exception(_LE('alarm evaluation cycle failed'))
 
     def _evaluate_alarm(self, alarm):
         """Evaluate the alarms assigned to this evaluator."""
@@ -222,35 +258,16 @@ class AlarmEvaluationService(os_service.Service):
         try:
             self.evaluators[alarm.type].obj.evaluate(alarm)
         except Exception:
-            LOG.exception(_('Failed to evaluate alarm %s'), alarm.alarm_id)
-
-    def start(self):
-        super(AlarmEvaluationService, self).start()
-        self.partition_coordinator.start()
-        self.partition_coordinator.join_group(self.PARTITIONING_GROUP_NAME)
-
-        # allow time for coordination if necessary
-        delay_start = self.partition_coordinator.is_active()
-
-        if self.evaluators:
-            interval = self.conf.evaluation_interval
-            self.tg.add_timer(
-                interval,
-                self._evaluate_assigned_alarms,
-                initial_delay=interval if delay_start else None)
-        if self.partition_coordinator.is_active():
-            heartbeat_interval = min(self.conf.coordination.heartbeat,
-                                     self.conf.evaluation_interval / 4)
-            self.tg.add_timer(heartbeat_interval,
-                              self.partition_coordinator.heartbeat)
-        # Add a dummy thread to have wait() working
-        self.tg.add_timer(604800, lambda: None)
+            LOG.exception(_LE('Failed to evaluate alarm %s'), alarm.alarm_id)
 
     def _assigned_alarms(self):
         # NOTE(r-mibu): The 'event' type alarms will be evaluated by the
         # event-driven alarm evaluator, so this periodical evaluator skips
         # those alarms.
-        all_alarms = self._storage_conn.get_alarms(enabled=True,
-                                                   exclude=dict(type='event'))
-        return self.partition_coordinator.extract_my_subset(
-            self.PARTITIONING_GROUP_NAME, all_alarms)
+        all_alarms = self.storage_conn.get_alarms(enabled=True,
+                                                  exclude=dict(type='event'))
+        all_alarms = list(all_alarms)
+        all_alarm_ids = [a.alarm_id for a in all_alarms]
+        selected = self.partition_coordinator.extract_my_subset(
+            self.PARTITIONING_GROUP_NAME, all_alarm_ids)
+        return list(filter(lambda a: a.alarm_id in selected, all_alarms))

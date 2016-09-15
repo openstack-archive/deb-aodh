@@ -12,9 +12,11 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 # License for the specific language governing permissions and limitations
 # under the License.
+import time
 
 import mock
 from oslo_config import fixture as fixture_config
+import oslo_messaging
 from oslo_serialization import jsonutils
 from oslotest import mockpatch
 import requests
@@ -48,33 +50,26 @@ class TestAlarmNotifierService(tests_base.BaseTestCase):
         self.CONF = self.useFixture(fixture_config.Config(conf)).conf
         self.setup_messaging(self.CONF)
 
-    def test_init_host_rpc(self):
-        self.CONF.set_override('ipc_protocol', 'rpc')
-        self.service = notifier.AlarmNotifierService(self.CONF)
-        self.service.start()
-        self.service.stop()
-
     def test_init_host_queue(self):
-        self.service = notifier.AlarmNotifierService(self.CONF)
-        self.service.start()
-        self.service.stop()
+        self.service = notifier.AlarmNotifierService(0, self.CONF)
+        self.service.terminate()
 
 
 class TestAlarmNotifier(tests_base.BaseTestCase):
-
     def setUp(self):
         super(TestAlarmNotifier, self).setUp()
         conf = service.prepare_service(argv=[], config_files=[])
         self.CONF = self.useFixture(fixture_config.Config(conf)).conf
         self.setup_messaging(self.CONF)
+        self._msg_notifier = oslo_messaging.Notifier(
+            self.transport, topics=['alarming'], driver='messaging',
+            publisher_id='testpublisher')
         self.zaqar = FakeZaqarClient(self)
         self.useFixture(mockpatch.Patch(
             'aodh.notifier.zaqar.ZaqarAlarmNotifier.get_zaqar_client',
             return_value=self.zaqar))
-        self.service = notifier.AlarmNotifierService(self.CONF)
-        self.useFixture(mockpatch.Patch(
-            'oslo_context.context.generate_request_id',
-            self._fake_generate_request_id))
+        self.service = notifier.AlarmNotifierService(0, self.CONF)
+        self.addCleanup(self.service.terminate)
 
     def test_notify_alarm(self):
         data = {
@@ -87,7 +82,8 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
             'reason': 'Everything is on fire',
             'reason_data': {'fire': 'everywhere'}
         }
-        self.service.notify_alarm({}, data)
+        self._msg_notifier.sample({}, 'alarm.update', data)
+        time.sleep(1)
         notifications = self.service.notifiers['test'].obj.notifications
         self.assertEqual(1, len(notifications))
         self.assertEqual((urlparse.urlsplit(data['actions'][0]),
@@ -100,15 +96,58 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
                           data['reason_data']),
                          notifications[0])
 
-    def test_notify_alarm_no_action(self):
-        self.service.notify_alarm({}, {})
-
-    def test_notify_alarm_log_action(self):
-        self.service.notify_alarm({},
-                                  {
-                                      'actions': ['log://'],
-                                      'alarm_id': 'foobar',
-                                      'condition': {'threshold': 42}})
+    @mock.patch('aodh.notifier.LOG.debug')
+    def test_notify_alarm_with_batch_listener(self, logger):
+        data1 = {
+            'actions': ['test://'],
+            'alarm_id': 'foobar',
+            'alarm_name': 'testalarm',
+            'severity': 'critical',
+            'previous': 'OK',
+            'current': 'ALARM',
+            'reason': 'Everything is on fire',
+            'reason_data': {'fire': 'everywhere'}
+        }
+        data2 = {
+            'actions': ['test://'],
+            'alarm_id': 'foobar2',
+            'alarm_name': 'testalarm2',
+            'severity': 'low',
+            'previous': 'ALARM',
+            'current': 'OK',
+            'reason': 'Everything is fine',
+            'reason_data': {'fine': 'fine'}
+        }
+        self.service.terminate()
+        self.CONF.set_override("batch_size", 2, 'notifier')
+        # Init a new service with new configuration
+        self.svc = notifier.AlarmNotifierService(0, self.CONF)
+        self.addCleanup(self.svc.terminate)
+        self._msg_notifier.sample({}, 'alarm.update', data1)
+        self._msg_notifier.sample({}, 'alarm.update', data2)
+        time.sleep(1)
+        notifications = self.svc.notifiers['test'].obj.notifications
+        self.assertEqual(2, len(notifications))
+        self.assertEqual((urlparse.urlsplit(data1['actions'][0]),
+                          data1['alarm_id'],
+                          data1['alarm_name'],
+                          data1['severity'],
+                          data1['previous'],
+                          data1['current'],
+                          data1['reason'],
+                          data1['reason_data']),
+                         notifications[0])
+        self.assertEqual((urlparse.urlsplit(data2['actions'][0]),
+                          data2['alarm_id'],
+                          data2['alarm_name'],
+                          data2['severity'],
+                          data2['previous'],
+                          data2['current'],
+                          data2['reason'],
+                          data2['reason_data']),
+                         notifications[1])
+        self.assertEqual(mock.call('Received %s messages in batch.', 2),
+                         logger.call_args_list[0])
 
     @staticmethod
     def _notification(action):
@@ -117,23 +156,31 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
         notification['actions'] = [action]
         return notification
 
-    HTTP_HEADERS = {'x-openstack-request-id': 'fake_request_id',
-                    'content-type': 'application/json'}
-
-    def _fake_generate_request_id(self):
-        return self.HTTP_HEADERS['x-openstack-request-id']
-
-    def test_notify_alarm_rest_action_ok(self):
+    @mock.patch('aodh.notifier.rest.LOG')
+    def test_notify_alarm_rest_action_ok(self, m_log):
         action = 'http://host/action'
 
         with mock.patch.object(requests.Session, 'post') as poster:
-            self.service.notify_alarm({},
+            self._msg_notifier.sample({},
+                                      'alarm.update',
                                       self._notification(action))
+            time.sleep(1)
             poster.assert_called_with(action, data=mock.ANY,
                                       headers=mock.ANY)
             args, kwargs = poster.call_args
-            self.assertEqual(self.HTTP_HEADERS, kwargs['headers'])
+            self.assertEqual(
+                {
+                    'x-openstack-request-id':
+                    kwargs['headers']['x-openstack-request-id'],
+                    'content-type': 'application/json'
+                },
+                kwargs['headers'])
             self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
+            self.assertEqual(2, len(m_log.info.call_args_list))
+            expected = mock.call('Notifying alarm <%(id)s> gets response: '
+                                 '%(status_code)s %(reason)s.',
+                                 mock.ANY)
+            self.assertEqual(expected, m_log.info.call_args_list[1])
 
     def test_notify_alarm_rest_action_with_ssl_client_cert(self):
         action = 'https://host/action'
@@ -142,13 +189,21 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
         self.CONF.set_override("rest_notifier_certificate_file", certificate)
 
         with mock.patch.object(requests.Session, 'post') as poster:
-            self.service.notify_alarm({},
+            self._msg_notifier.sample({},
+                                      'alarm.update',
                                       self._notification(action))
+            time.sleep(1)
             poster.assert_called_with(action, data=mock.ANY,
                                       headers=mock.ANY,
                                       cert=certificate, verify=True)
             args, kwargs = poster.call_args
-            self.assertEqual(self.HTTP_HEADERS, kwargs['headers'])
+            self.assertEqual(
+                {
+                    'x-openstack-request-id':
+                    kwargs['headers']['x-openstack-request-id'],
+                    'content-type': 'application/json'
+                },
+                kwargs['headers'])
             self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
 
     def test_notify_alarm_rest_action_with_ssl_client_cert_and_key(self):
@@ -160,13 +215,20 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
         self.CONF.set_override("rest_notifier_certificate_key", key)
 
         with mock.patch.object(requests.Session, 'post') as poster:
-            self.service.notify_alarm({},
+            self._msg_notifier.sample({},
+                                      'alarm.update',
                                       self._notification(action))
+            time.sleep(1)
             poster.assert_called_with(action, data=mock.ANY,
                                       headers=mock.ANY,
                                       cert=(certificate, key), verify=True)
             args, kwargs = poster.call_args
-            self.assertEqual(self.HTTP_HEADERS, kwargs['headers'])
+            self.assertEqual(
+                {
+                    'x-openstack-request-id':
+                    kwargs['headers']['x-openstack-request-id'],
+                    'content-type': 'application/json'},
+                kwargs['headers'])
             self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
 
     def test_notify_alarm_rest_action_with_ssl_verify_disable_by_cfg(self):
@@ -175,26 +237,60 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
         self.CONF.set_override("rest_notifier_ssl_verify", False)
 
         with mock.patch.object(requests.Session, 'post') as poster:
-            self.service.notify_alarm({},
+            self._msg_notifier.sample({},
+                                      'alarm.update',
                                       self._notification(action))
+            time.sleep(1)
             poster.assert_called_with(action, data=mock.ANY,
                                       headers=mock.ANY,
                                       verify=False)
             args, kwargs = poster.call_args
-            self.assertEqual(self.HTTP_HEADERS, kwargs['headers'])
+            self.assertEqual(
+                {
+                    'x-openstack-request-id':
+                    kwargs['headers']['x-openstack-request-id'],
+                    'content-type': 'application/json'
+                },
+                kwargs['headers'])
+            self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
+
+    def test_notify_alarm_rest_action_with_ssl_server_verify_enable(self):
+        action = 'https://host/action'
+        ca_bundle = "/path/to/custom_cert.pem"
+
+        self.CONF.set_override("rest_notifier_ca_bundle_certificate_path",
+                               ca_bundle)
+
+        with mock.patch.object(requests.Session, 'post') as poster:
+            self._msg_notifier.sample({},
+                                      'alarm.update',
+                                      self._notification(action))
+            time.sleep(1)
+            poster.assert_called_with(action, data=mock.ANY,
+                                      headers=mock.ANY,
+                                      verify=ca_bundle)
+            args, kwargs = poster.call_args
             self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
 
     def test_notify_alarm_rest_action_with_ssl_verify_disable(self):
         action = 'https://host/action?aodh-alarm-ssl-verify=0'
 
         with mock.patch.object(requests.Session, 'post') as poster:
-            self.service.notify_alarm({},
+            self._msg_notifier.sample({},
+                                      'alarm.update',
                                       self._notification(action))
+            time.sleep(1)
             poster.assert_called_with(action, data=mock.ANY,
                                       headers=mock.ANY,
                                       verify=False)
             args, kwargs = poster.call_args
-            self.assertEqual(self.HTTP_HEADERS, kwargs['headers'])
+            self.assertEqual(
+                {
+                    'x-openstack-request-id':
+                    kwargs['headers']['x-openstack-request-id'],
+                    'content-type': 'application/json'
+                },
+                kwargs['headers'])
             self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
 
     def test_notify_alarm_rest_action_with_ssl_verify_enable_by_user(self):
@@ -203,13 +299,21 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
         self.CONF.set_override("rest_notifier_ssl_verify", False)
 
         with mock.patch.object(requests.Session, 'post') as poster:
-            self.service.notify_alarm({},
+            self._msg_notifier.sample({},
+                                      'alarm.update',
                                       self._notification(action))
+            time.sleep(1)
             poster.assert_called_with(action, data=mock.ANY,
                                       headers=mock.ANY,
                                       verify=True)
             args, kwargs = poster.call_args
-            self.assertEqual(self.HTTP_HEADERS, kwargs['headers'])
+            self.assertEqual(
+                {
+                    'x-openstack-request-id':
+                    kwargs['headers']['x-openstack-request-id'],
+                    'content-type': 'application/json'
+                },
+                kwargs['headers'])
             self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
 
     @staticmethod
@@ -221,25 +325,27 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
                         self._fake_urlsplit):
             LOG = mock.MagicMock()
             with mock.patch('aodh.notifier.LOG', LOG):
-                self.service.notify_alarm(
-                    {},
+                self._msg_notifier.sample(
+                    {}, 'alarm.update',
                     {
                         'actions': ['no-such-action-i-am-sure'],
                         'alarm_id': 'foobar',
                         'condition': {'threshold': 42},
                     })
+                time.sleep(1)
                 self.assertTrue(LOG.error.called)
 
     def test_notify_alarm_invalid_action(self):
         LOG = mock.MagicMock()
         with mock.patch('aodh.notifier.LOG', LOG):
-            self.service.notify_alarm(
-                {},
+            self._msg_notifier.sample(
+                {}, 'alarm.update',
                 {
                     'actions': ['no-such-action-i-am-sure://'],
                     'alarm_id': 'foobar',
                     'condition': {'threshold': 42},
                 })
+            time.sleep(1)
             self.assertTrue(LOG.error.called)
 
     def test_notify_alarm_trust_action(self):
@@ -248,28 +354,35 @@ class TestAlarmNotifier(tests_base.BaseTestCase):
 
         client = mock.MagicMock()
         client.session.auth.get_access.return_value.auth_token = 'token_1234'
-        headers = {'X-Auth-Token': 'token_1234'}
-        headers.update(self.HTTP_HEADERS)
 
-        self.useFixture(mockpatch.Patch('keystoneclient.v3.client.Client',
-                                        lambda **kwargs: client))
+        self.useFixture(
+            mockpatch.Patch('aodh.keystone_client.get_trusted_client',
+                            lambda *args: client))
 
         with mock.patch.object(requests.Session, 'post') as poster:
-            self.service.notify_alarm({},
+            self._msg_notifier.sample({}, 'alarm.update',
                                       self._notification(action))
-            headers = {'X-Auth-Token': 'token_1234'}
-            headers.update(self.HTTP_HEADERS)
+            time.sleep(1)
             poster.assert_called_with(
                 url, data=mock.ANY, headers=mock.ANY)
             args, kwargs = poster.call_args
-            self.assertEqual(headers, kwargs['headers'])
+            self.assertEqual(
+                {
+                    'X-Auth-Token': 'token_1234',
+                    'x-openstack-request-id':
+                    kwargs['headers']['x-openstack-request-id'],
+                    'content-type': 'application/json'
+                },
+                kwargs['headers'])
+
             self.assertEqual(DATA_JSON, jsonutils.loads(kwargs['data']))
 
     def test_zaqar_notifier_action(self):
         action = 'zaqar://?topic=critical&subscriber=http://example.com/data' \
                  '&subscriber=mailto:foo@example.com&ttl=7200'
-        self.service.notify_alarm({},
+        self._msg_notifier.sample({}, 'alarm.update',
                                   self._notification(action))
+        time.sleep(1)
         self.assertEqual(self.zaqar,
                          self.service.notifiers['zaqar'].obj.client)
 

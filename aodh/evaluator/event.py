@@ -13,16 +13,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import fnmatch
 import operator
 
 from oslo_config import cfg
 from oslo_log import log
+from oslo_serialization import jsonutils
+from oslo_utils import fnmatch
 from oslo_utils import timeutils
 import six
 
 from aodh import evaluator
-from aodh.i18n import _, _LE
+from aodh.i18n import _, _LE, _LW
 
 LOG = log.getLogger(__name__)
 
@@ -167,7 +168,8 @@ class EventAlarmEvaluator(evaluator.Evaluator):
             try:
                 event = Event(e)
             except InvalidEvent:
-                LOG.debug('Aborting evaluation of the event.')
+                LOG.warning(_LW('Event <%s> is invalid, aborting evaluation '
+                                'for it.'), e)
                 continue
 
             for id, alarm in six.iteritems(
@@ -247,9 +249,12 @@ class EventAlarmEvaluator(evaluator.Evaluator):
         """Update alarm state and fire alarm via alarm notifier."""
 
         state = evaluator.ALARM
-        reason = (_('Event (message_id=%(message)s) hit the query of alarm '
-                    '(id=%(alarm)s)') %
-                  {'message': event.id, 'alarm': alarm.id})
+        reason = (_('Event <id=%(id)s,event_type=%(event_type)s> hits the '
+                    'query <query=%(alarm_query)s>.') %
+                  {'id': event.id,
+                   'event_type': event.get_value('event_type'),
+                   'alarm_query': jsonutils.dumps(alarm.obj.rule['query'],
+                                                  sort_keys=True)})
         reason_data = {'type': 'event', 'event': event.obj}
         always_record = alarm.obj.repeat_actions
         self._refresh(alarm.obj, state, reason, reason_data, always_record)

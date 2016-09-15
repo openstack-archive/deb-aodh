@@ -33,8 +33,9 @@ def get_transport(conf, url=None, optional=False, cache=True):
     if not transport or not cache:
         try:
             transport = oslo_messaging.get_transport(conf, url)
-        except oslo_messaging.InvalidTransportURL as e:
-            if not optional or e.url:
+        except (oslo_messaging.InvalidTransportURL,
+                oslo_messaging.DriverLoadFailure):
+            if not optional or url:
                 # NOTE(sileht): oslo_messaging is configured but unloadable
                 # so reraise the exception
                 raise
@@ -45,28 +46,14 @@ def get_transport(conf, url=None, optional=False, cache=True):
     return transport
 
 
-def get_rpc_server(conf, transport, topic, endpoint):
-    """Return a configured oslo_messaging rpc server."""
-    target = oslo_messaging.Target(server=conf.host, topic=topic)
-    return oslo_messaging.get_rpc_server(transport, target,
-                                         [endpoint], executor='threading',
-                                         serializer=_SERIALIZER)
-
-
-def get_rpc_client(transport, retry=None, **kwargs):
-    """Return a configured oslo_messaging RPCClient."""
-    target = oslo_messaging.Target(**kwargs)
-    return oslo_messaging.RPCClient(transport, target,
-                                    serializer=_SERIALIZER,
-                                    retry=retry)
-
-
-def get_notification_listener(transport, targets, endpoints,
-                              allow_requeue=False):
+def get_batch_notification_listener(transport, targets, endpoints,
+                                    allow_requeue=False,
+                                    batch_size=1, batch_timeout=None):
     """Return a configured oslo_messaging notification listener."""
-    return oslo_messaging.get_notification_listener(
+    return oslo_messaging.get_batch_notification_listener(
         transport, targets, endpoints, executor='threading',
-        allow_requeue=allow_requeue)
+        allow_requeue=allow_requeue,
+        batch_size=batch_size, batch_timeout=batch_timeout)
 
 
 def get_notifier(transport, publisher_id):

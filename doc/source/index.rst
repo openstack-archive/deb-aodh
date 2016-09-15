@@ -44,6 +44,7 @@ Developer Documentation
    configuration
    testing
    contributing
+   event-alarm
 
 Appendix
 ========
@@ -51,6 +52,7 @@ Appendix
 .. toctree::
    :maxdepth: 1
 
+   releasenotes/index
    glossary
    api/index
 

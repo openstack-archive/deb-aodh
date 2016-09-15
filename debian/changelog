@@ -1,5 +1,10 @@
-aodh (2.0.0-3) UNRELEASED; urgency=medium
+aodh (3.0.0~b3-1) experimental; urgency=medium
 
+  * New upstream release.
+  * Fixed (build-)depends for this release.
+  * Using OpenStack's Gerrit as VCS URLs.
+  * Modified .gitreview to point at Gerrit.
+  * Add debian/functions.sh as it's gone upstream.
   * Updated Danish translation of the debconf templates (Closes: #830646).
   * Do not run test_messaging.MessagingTests.test_get_transport_optional,
     which is failing under some OS (Xenial & Jessie arm64).

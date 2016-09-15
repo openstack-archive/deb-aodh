@@ -16,6 +16,7 @@ import operator
 from sqlalchemy import and_
 from sqlalchemy import asc
 from sqlalchemy import desc
+from sqlalchemy import func
 from sqlalchemy import not_
 from sqlalchemy import or_
 
@@ -32,7 +33,7 @@ class QueryTransformer(object):
                  "in": lambda field_name, values: field_name.in_(values),
                  "=~": lambda field, value: field.op("regexp")(value)}
 
-    # operators which are differs for different dialects
+    # operators which are different for different dialects
     dialect_operators = {'postgresql': {'=~': (lambda field, value:
                                                field.op("~")(value))}}
 
@@ -88,8 +89,13 @@ class QueryTransformer(object):
             for field in orderby:
                 attr, order = list(field.items())[0]
                 ordering_function = self.ordering_functions[order]
-                self.query = self.query.order_by(ordering_function(
-                    getattr(self.table, attr)))
+                if attr == 'severity':
+                    self.query = self.query.order_by(ordering_function(
+                        func.field(getattr(self.table, attr), 'low',
+                                   'moderate', 'critical')))
+                else:
+                    self.query = self.query.order_by(ordering_function(
+                        getattr(self.table, attr)))
         else:
             self.query = self.query.order_by(desc(self.table.timestamp))
 

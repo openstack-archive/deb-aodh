@@ -1,3 +1,10 @@
+aodh (3.0.0~rc1-1) experimental; urgency=medium
+
+  * New upstream release.
+  * Add python-zaqarclient as build-depends-indep.
+
+ -- Thomas Goirand <zigo@debian.org>  Mon, 19 Sep 2016 17:14:50 +0200
+
 aodh (3.0.0~b3-1) experimental; urgency=medium
 
   * New upstream release.

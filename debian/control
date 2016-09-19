@@ -64,6 +64,7 @@ Build-Depends-Indep: alembic (>= 0.7.2),
                      python-tz,
                      python-webob,
                      python-wsme (>= 0.8),
+                     python-zaqarclient (>= 1.2.0),
                      subunit,
                      testrepository,
 Standards-Version: 3.9.8

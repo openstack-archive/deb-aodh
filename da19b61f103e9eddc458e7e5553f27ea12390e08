@@ -1,0 +1,8 @@
+Code-Review+2: Thomas Goirand <thomas@goirand.fr>
+Workflow+1: Thomas Goirand <thomas@goirand.fr>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 26 Sep 2016 12:52:27 +0000
+Reviewed-on: https://review.openstack.org/376220
+Project: openstack/deb-aodh
+Branch: refs/heads/debian/newton

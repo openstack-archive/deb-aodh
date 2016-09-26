@@ -27,7 +27,6 @@ override_dh_install:
 		--namespace oslo.messaging \
 		--namespace oslo.middleware.cors \
 		--namespace oslo.policy \
-		--namespace oslo.service.service \
 		--namespace keystonemiddleware.auth_token
 	sed -i 's|[# \t]*auth_protocol[\t ]*=.*|auth_protocol=http|' $(CURDIR)/debian/aodh-common/usr/share/aodh-common/aodh.conf
 	chmod 0644 $(CURDIR)/debian/aodh-common/usr/share/aodh-common/aodh.conf

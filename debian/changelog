@@ -1,3 +1,10 @@
+aodh (3.0.0~rc1-3) UNRELEASED; urgency=medium
+
+  * Removed --namespace oslo.service.service when generating aodh.conf.
+  * debian/source/options: ignores egg-info and .gitreview.
+
+ -- Thomas Goirand <zigo@debian.org>  Mon, 26 Sep 2016 09:09:28 +0200
+
 aodh (3.0.0~rc1-1) experimental; urgency=medium
 
   * New upstream release.

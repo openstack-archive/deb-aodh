@@ -3,6 +3,7 @@ aodh (3.0.0~rc1-3) UNRELEASED; urgency=medium
   [ Thomas Goirand ]
   * Removed --namespace oslo.service.service when generating aodh.conf.
   * debian/source/options: ignores egg-info and .gitreview.
+  * Fixed EPOCH for oslotest.
 
   [ Ondřej Nový ]
   * d/control: Use correct branch in Vcs-* fields

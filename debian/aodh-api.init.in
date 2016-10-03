@@ -15,3 +15,8 @@
 DESC="OpenStack Aodh API"
 PROJECT_NAME=aodh
 NAME=${PROJECT_NAME}-api
+DAEMON=/usr/bin/uwsgi_python
+DAEMON_ARGS="--master --die-on-term --logto /var/log/aodh/aodh-api.log --stats localhost:9314 --http-socket :8042 --wsgi-file /usr/share/aodh-common/app.wsgi"
+NO_OPENSTACK_CONFIG_FILE_DAEMON_ARG=yes
+NO_OPENSTACK_LOGFILE_DAEMON_ARG=yes
+USE_SYSLOG=no

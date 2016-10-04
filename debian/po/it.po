@@ -1,13 +1,13 @@
 # Italian description of aodh debconf messages.
-# Copyright (C) 2012, aodh package copyright holder.
+# Copyright (C) 2016, aodh package copyright holder.
 # This file is distributed under the same license as the aodh package.
-# Beatrice Torracca <beatricet@libero.it>, 2012, 2013, 2014.
+# Beatrice Torracca <beatricet@libero.it>, 2012, 2013, 2014, 2016.
 msgid ""
 msgstr ""
 "Project-Id-Version: aodh\n"
 "Report-Msgid-Bugs-To: aodh@packages.debian.org\n"
 "POT-Creation-Date: 2016-03-29 12:07+0000\n"
-"PO-Revision-Date: 2014-04-21 10:03+0200\n"
+"PO-Revision-Date: 2016-08-01 13:35+0200\n"
 "Last-Translator: Beatrice Torracca <beatricet@libero.it>\n"
 "Language-Team: Italian <debian-l10n-italian@lists.debian.org>\n"
 "Language: it\n"
@@ -38,7 +38,6 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../aodh-api.templates:2001
-#, fuzzy
 #| msgid ""
 #| "Note that you will need to have an up and running Keystone server on "
 #| "which to connect using the Keystone authentication token."
@@ -48,7 +47,9 @@ msgid ""
 "The admin auth token is not used anymore."
 msgstr ""
 "Notare che sarà necessario avere un server Keystone in funzione a cui "
-"connettersi usando il token di autenticazione Keystone."
+"connettersi usando un nome di progetto di amministrazione conosciuto, un "
+"nome utente e password di amministratore. Il token di autenticazione di "
+"amministratore non è più usato."
 
 #. Type: string
 #. Description
@@ -70,10 +71,9 @@ msgstr ""
 #. Type: string
 #. Description
 #: ../aodh-api.templates:4001
-#, fuzzy
 #| msgid "Keystone authentication token:"
 msgid "Keystone admin name:"
-msgstr "Token di autenticazione Keystone:"
+msgstr "Nome amministratore Keystone:"
 
 #. Type: string
 #. Description
@@ -87,18 +87,21 @@ msgid ""
 "To register the service endpoint, this package needs to know the Admin "
 "login, name, project name, and password to the Keystone server."
 msgstr ""
+"Per registrare il punto terminale del servizio questo pacchetto deve "
+"conoscere il login, il nome, il nome del progetto e la password "
+"dell'amministratore per il server Keystone."
 
 #. Type: string
 #. Description
 #: ../aodh-api.templates:5001
 msgid "Keystone admin project name:"
-msgstr ""
+msgstr "Nome del progetto di amministrazione Keystone:"
 
 #. Type: password
 #. Description
 #: ../aodh-api.templates:6001
 msgid "Keystone admin password:"
-msgstr ""
+msgstr "Password amministratore Keystone:"
 
 #. Type: string
 #. Description
@@ -264,130 +267,3 @@ msgstr "Password per il server di autenticazione:"
 #: ../aodh-common.templates:9001
 msgid "Please specify the password to use with the authentication server."
 msgstr "Inserire la password da usare con il server di autenticazione."
-
-#~ msgid ""
-#~ "To configure its endpoint in Keystone, aodh-api needs the Keystone "
-#~ "authentication token."
-#~ msgstr ""
-#~ "Per configurare il proprio punto terminale in Keystone, aodh-api ha "
-#~ "bisogno del token di autenticazione Keystone."
-
-#~ msgid "keystone"
-#~ msgstr "keystone"
-
-#~ msgid "caching"
-#~ msgstr "caching"
-
-#~ msgid "keystone+caching"
-#~ msgstr "keystone+caching"
-
-#~ msgid "cachemanagement"
-#~ msgstr "cachemanagement"
-
-#~ msgid "keystone+cachemanagement"
-#~ msgstr "keystone+cachemanagement"
-
-#~ msgid "Pipeline flavor:"
-#~ msgstr "Tipo di pipeline:"
-
-#~| msgid "Please specify the flavor of pipeline to be used by Aodh."
-#~ msgid "Please specify the flavor of the pipeline to be used by Aodh."
-#~ msgstr "Specificare il tipo di pipeline da usare con Aodh."
-
-#~ msgid ""
-#~ "If you use the OpenStack Identity Service (Keystone), you might want to "
-#~ "select \"keystone\". If you don't use this service, you can safely choose "
-#~ "\"caching\" only."
-#~ msgstr ""
-#~ "Se si usa OpenStack Identity Service (Keystone) si può selezionare "
-#~ "«keystone». Se non si usa questo servizio, si può senza problemi "
-#~ "scegliere semplicemente «caching»."
-
-#~| msgid "Set up a database for aodh?"
-#~ msgid "Set up a database for Aodh?"
-#~ msgstr "Impostare un database per Aodh?"
-
-#~| msgid ""
-#~| "No database has been set up for aodh-registry or glance-api to use. "
-#~| "Before continuing, you should make sure you have:"
-#~ msgid ""
-#~ "No database has been set up for aodh-registry or glance-api to use. "
-#~ "Before continuing, you should make sure you have the following "
-#~ "information:"
-#~ msgstr ""
-#~ "Non è stato impostato alcun database per essere usato da aodh-registry o "
-#~ "aodh-api. Prima di continuare assicurarsi di avere le seguenti "
-#~ "informazioni:"
-
-#~| msgid ""
-#~| " - the server host name (that server must allow TCP connections from "
-#~| "this\n"
-#~| "   machine);\n"
-#~| " - a username and password to access the database.\n"
-#~| " - A database type that you want to use."
-#~ msgid ""
-#~ " * the type of database that you want to use;\n"
-#~ " * the database server hostname (that server must allow TCP connections "
-#~ "from this\n"
-#~ "   machine);\n"
-#~ " * a username and password to access the database."
-#~ msgstr ""
-#~ " * il tipo di database che si desidera usare;\n"
-#~ " * il nome host del server di database (che deve permettere le "
-#~ "connessioni\n"
-#~ "   TCP da questa macchina);\n"
-#~ " * un nome utente e una password per accedere al database."
-
-#~| msgid ""
-#~| "If some of these requirements are missing, reject this option and run "
-#~| "with regular sqlite support."
-#~ msgid ""
-#~ "If some of these requirements are missing, do not choose this option and "
-#~ "run with regular SQLite support."
-#~ msgstr ""
-#~ "Se non si ha uno o più di questi requisiti, non scegliere questa opzione "
-#~ "ed eseguire con il regolare supporto per SQLite."
-
-#~| msgid ""
-#~| "You can change this setting later on by running 'dpkg-reconfigure -plow "
-#~| "aodh-common'."
-#~ msgid ""
-#~ "You can change this setting later on by running \"dpkg-reconfigure -plow "
-#~ "aodh-common\"."
-#~ msgstr ""
-#~ "È possibile cambiare questa impostazione successivamente eseguendo «dpkg-"
-#~ "reconfigure -plow aodh-common»."
-
-#~ msgid "Set up a database for aodh-registry?"
-#~ msgstr "Impostare un database per aodh-registry?"
-
-#~ msgid ""
-#~ "No database has been set up for aodh-registry to use. Before continuing, "
-#~ "you should make sure you have:"
-#~ msgstr ""
-#~ "Non è stato impostato alcun database per essere usato da aodh-registry. "
-#~ "Prima di continuare ci si dovrebbe assicurare di avere:"
-
-#~ msgid ""
-#~ " - the server host name (that server must allow TCP connections\n"
-#~ "   from this machine);\n"
-#~ " - a username and password to access the database.\n"
-#~ " - A database type that you want to use."
-#~ msgstr ""
-#~ " - il nome host del server (tale server deve permettere le connessioni\n"
-#~ "   TCP da questo macchina);\n"
-#~ " - un nome utente e una password per accedere al database;\n"
-#~ " - un tipo di database che si desidera usare."
-
-#~ msgid ""
-#~ "You can change this setting later on by running 'dpkg-reconfigure -plow "
-#~ "aodh-registry"
-#~ msgstr ""
-#~ "È possibile cambiare questa impostazione successivamente eseguendo \"dpkg-"
-#~ "reconfigure -plow aodh-registry\""
-
-#~ msgid "Auth server URL:"
-#~ msgstr "URL del server di autenticazione:"
-
-#~ msgid "Auth server admin token:"
-#~ msgstr "Token di ammnistrazione del server di autenticazione:"

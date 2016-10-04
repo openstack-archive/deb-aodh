@@ -7,6 +7,8 @@ aodh (3.0.0~rc1-3) UNRELEASED; urgency=medium
   * Build-Depends on openstack-pkg-tools >= 53~.
   * Switch aodh-api to uwsgi-plugin-python, since eventlet support is gone
     upstream.
+  * Debconf translation:
+    - it (Closes: #839199).
 
   [ Ondřej Nový ]
   * d/control: Use correct branch in Vcs-* fields

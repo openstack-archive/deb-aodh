@@ -1,3 +1,9 @@
+aodh (3.0.0-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Thomas Goirand <zigo@debian.org>  Thu, 06 Oct 2016 23:18:52 +0200
+
 aodh (3.0.0~rc1-3) unstable; urgency=medium
 
   [ Thomas Goirand ]

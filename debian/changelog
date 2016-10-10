@@ -1,3 +1,9 @@
+aodh (3.0.0-2) unstable; urgency=medium
+
+  * Correctly kills mongodb processes (Closes: #835177).
+
+ -- Thomas Goirand <zigo@debian.org>  Mon, 10 Oct 2016 13:55:42 +0200
+
 aodh (3.0.0-1) unstable; urgency=medium
 
   * New upstream release.

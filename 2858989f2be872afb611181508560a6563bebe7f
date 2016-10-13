@@ -1,0 +1,9 @@
+Code-Review+2: Ildiko Vancsa <ildiko.vancsa@gmail.com>
+Code-Review+2: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Workflow+1: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Tue, 11 Oct 2016 08:34:46 +0000
+Reviewed-on: https://review.openstack.org/383194
+Project: openstack/deb-aodh
+Branch: refs/heads/master

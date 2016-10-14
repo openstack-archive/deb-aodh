@@ -1,0 +1,10 @@
+Code-Review+1: Hanxi Liu <hanxi.liu@easystack.cn>
+Code-Review+2: gordon chung <gord@live.ca>
+Code-Review+2: liusheng <liusheng2048@gmail.com>
+Workflow+1: liusheng <liusheng2048@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 14 Oct 2016 07:29:47 +0000
+Reviewed-on: https://review.openstack.org/373043
+Project: openstack/deb-aodh
+Branch: refs/heads/master

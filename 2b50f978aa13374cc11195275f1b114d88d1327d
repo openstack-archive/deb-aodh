@@ -1,0 +1,8 @@
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Workflow+1: Julien Danjou <julien@danjou.info>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Mon, 09 Jan 2017 16:30:10 +0000
+Reviewed-on: https://review.openstack.org/417374
+Project: openstack/deb-aodh
+Branch: refs/heads/stable/newton

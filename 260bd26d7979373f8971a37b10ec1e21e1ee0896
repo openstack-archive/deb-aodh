@@ -1,0 +1,10 @@
+Code-Review+2: gordon chung <gord@live.ca>
+Code-Review+2: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Workflow+1: Mehdi Abaakouk (sileht) <sileht@redhat.com>
+Code-Review+1: Hanxi Liu <hanxi.liu@easystack.cn>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 20 Jan 2017 10:30:19 +0000
+Reviewed-on: https://review.openstack.org/421454
+Project: openstack/deb-aodh
+Branch: refs/heads/master

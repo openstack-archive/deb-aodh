@@ -1,0 +1,9 @@
+Code-Review+1: Marius Cornea <mcornea@redhat.com>
+Code-Review+2: gordon chung <gord@live.ca>
+Workflow+1: gordon chung <gord@live.ca>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 08 Feb 2017 18:22:09 +0000
+Reviewed-on: https://review.openstack.org/431055
+Project: openstack/deb-aodh
+Branch: refs/heads/master

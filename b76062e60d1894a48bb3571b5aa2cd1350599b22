@@ -1,0 +1,9 @@
+Code-Review+2: gordon chung <gord@live.ca>
+Workflow+1: liusheng <liusheng2048@gmail.com>
+Code-Review+2: liusheng <liusheng2048@gmail.com>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Fri, 10 Feb 2017 03:28:00 +0000
+Reviewed-on: https://review.openstack.org/430715
+Project: openstack/deb-aodh
+Branch: refs/heads/master

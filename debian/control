@@ -3,7 +3,7 @@ Section: web
 Priority: optional
 Maintainer: PKG OpenStack <openstack-devel@lists.alioth.debian.org>
 Uploaders: Thomas Goirand <zigo@debian.org>,
-Build-Depends: debhelper (>= 10),
+Build-Depends: debhelper (>= 9),
                dh-python,
                dh-systemd,
                openstack-pkg-tools (>= 53~),
@@ -149,6 +149,7 @@ Architecture: all
 Depends: adduser,
          aodh-common (= ${binary:Version}),
          debconf,
+         net-tools,
          python-openstackclient,
          q-text-as-data,
          uwsgi-plugin-python,

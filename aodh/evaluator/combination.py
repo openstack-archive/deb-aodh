@@ -18,7 +18,7 @@ from oslo_log import log
 from six import moves
 
 from aodh import evaluator
-from aodh.i18n import _, _LE
+from aodh.i18n import _
 
 LOG = log.getLogger(__name__)
 
@@ -31,10 +31,10 @@ class CombinationEvaluator(evaluator.Evaluator):
         try:
             alarms = self._storage_conn.get_alarms(alarm_id=alarm_id)
         except Exception:
-            LOG.exception(_LE('alarm %s retrieval failed'), alarm_id)
+            LOG.exception('alarm %s retrieval failed', alarm_id)
             return None
         if not alarms:
-            LOG.error(_LE("alarm %s doesn't exist anymore"), alarm_id)
+            LOG.error("alarm %s doesn't exist anymore", alarm_id)
             return None
         return list(alarms)[0].state
 

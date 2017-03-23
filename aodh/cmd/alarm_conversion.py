@@ -20,7 +20,6 @@ import argparse
 from oslo_log import log
 from oslo_utils import uuidutils
 
-from aodh.i18n import _LI, _LW
 from aodh import service
 from aodh import storage
 from aodh.storage import models
@@ -47,8 +46,8 @@ class UnsupportedSubAlarmType(Exception):
 def _generate_composite_rule(conn, combin_alarm):
     alarm_ids = combin_alarm.rule['alarm_ids']
     com_op = combin_alarm.rule['operator']
-    LOG.info(_LI('Start converting combination alarm %(alarm)s, it depends on '
-                 'alarms: %(alarm_ids)s'),
+    LOG.info('Start converting combination alarm %(alarm)s, it depends on '
+                 'alarms: %(alarm_ids)s',
              {'alarm': combin_alarm.alarm_id, 'alarm_ids': str(alarm_ids)})
     threshold_rules = []
     for alarm_id in alarm_ids:
@@ -97,24 +96,24 @@ def conversion():
         new_name = 'From-combination: %s' % alarm.alarm_id
         n_alarm = list(conn.get_alarms(name=new_name, alarm_type='composite'))
         if n_alarm:
-            LOG.warning(_LW('Alarm %(alarm)s has been already converted as '
-                            'composite alarm: %(n_alarm_id)s, skipped.'),
+            LOG.warning('Alarm %(alarm)s has been already converted as '
+                            'composite alarm: %(n_alarm_id)s, skipped.',
                         {'alarm': alarm.alarm_id,
                          'n_alarm_id': n_alarm[0].alarm_id})
             continue
         try:
             composite_rule = _generate_composite_rule(conn, alarm)
         except DependentAlarmNotFound as e:
-            LOG.warning(_LW('The dependent alarm %(dep_alarm)s of alarm %'
-                            '(com_alarm)s not found, skipped.'),
+            LOG.warning('The dependent alarm %(dep_alarm)s of alarm %'
+                            '(com_alarm)s not found, skipped.',
                         {'com_alarm': e.com_alarm_id,
                          'dep_alarm': e.dependent_alarm_id})
             continue
         except UnsupportedSubAlarmType as e:
-            LOG.warning(_LW('Alarm conversion from combination to composite '
+            LOG.warning('Alarm conversion from combination to composite '
                             'only support combination alarms depending '
                             'threshold alarms, the type of alarm %(alarm)s '
-                            'is: %(type)s, skipped.'),
+                            'is: %(type)s, skipped.',
                         {'alarm': e.sub_alarm_id, 'type': e.sub_alarm_type})
             continue
         new_alarm = models.Alarm(**alarm.as_dict())
@@ -126,14 +125,14 @@ def conversion():
         new_alarm.rule = composite_rule
         new_alarm.timestamp = datetime.datetime.now()
         conn.create_alarm(new_alarm)
-        LOG.info(_LI('End Converting combination alarm %(s_alarm)s to '
-                     'composite alarm %(d_alarm)s'),
+        LOG.info('End Converting combination alarm %(s_alarm)s to '
+                     'composite alarm %(d_alarm)s',
                  {'s_alarm': alarm.alarm_id, 'd_alarm': new_alarm.alarm_id})
         count += 1
     if args.delete_combination_alarm:
         for alarm in combination_alarms:
-            LOG.info(_LI('Deleting the combination alarm %s...'),
+            LOG.info('Deleting the combination alarm %s...',
                      alarm.alarm_id)
             conn.delete_alarm(alarm.alarm_id)
-    LOG.info(_LI('%s combination alarms have been converted to composite '
-                 'alarms.'), count)
+    LOG.info('%s combination alarms have been converted to composite '
+                 'alarms.', count)

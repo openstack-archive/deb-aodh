@@ -18,7 +18,6 @@ from oslo_log import log
 from oslo_serialization import jsonutils
 
 from aodh.evaluator import threshold
-from aodh.i18n import _LW
 from aodh import keystone_client
 
 LOG = log.getLogger(__name__)
@@ -62,7 +61,7 @@ class GnocchiResourceThresholdEvaluator(GnocchiBase):
                 resource_id=rule['resource_id'],
                 aggregation=rule['aggregation_method'])
         except Exception as e:
-            LOG.warning(_LW('alarm stats retrieval failed: %s'),
+            LOG.warning('alarm stats retrieval failed: %s',
                         e)
             return []
 
@@ -84,7 +83,7 @@ class GnocchiAggregationMetricsThresholdEvaluator(GnocchiBase):
                 aggregation=rule['aggregation_method'],
                 needed_overlap=0)
         except Exception as e:
-            LOG.warning(_LW('alarm stats retrieval failed: %s'), e)
+            LOG.warning('alarm stats retrieval failed: %s', e)
             return []
 
 
@@ -108,5 +107,5 @@ class GnocchiAggregationResourcesThresholdEvaluator(GnocchiBase):
                 needed_overlap=0,
             )
         except Exception as e:
-            LOG.warning(_LW('alarm stats retrieval failed: %s'), e)
+            LOG.warning('alarm stats retrieval failed: %s', e)
             return []

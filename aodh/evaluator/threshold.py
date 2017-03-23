@@ -26,7 +26,7 @@ from oslo_utils import timeutils
 
 from aodh import evaluator
 from aodh.evaluator import utils
-from aodh.i18n import _, _LW
+from aodh.i18n import _
 from aodh import keystone_client
 
 LOG = log.getLogger(__name__)
@@ -207,8 +207,8 @@ class ThresholdEvaluator(evaluator.Evaluator):
                 return
 
         if state == evaluator.UNKNOWN and not unknown:
-            LOG.warning(_LW('Expecting %(expected)d datapoints but only get '
-                            '%(actual)d') % {
+            LOG.warning('Expecting %(expected)d datapoints but only get '
+                            '%(actual)d' % {
                 'expected': alarm.rule['evaluation_periods'],
                 'actual': len(statistics)})
             # Reason is not same as log message because we want to keep

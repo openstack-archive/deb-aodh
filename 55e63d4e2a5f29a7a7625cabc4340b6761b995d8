@@ -1,0 +1,11 @@
+Code-Review+2: gordon chung <gord@live.ca>
+Code-Review+1: Hanxi Liu <hanxi.liu@easystack.cn>
+Code-Review+1: Ghanshyam Mann <ghanshyammann@gmail.com>
+Code-Review+2: Julien Danjou <julien@danjou.info>
+Workflow+1: gordon chung <gord@live.ca>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 08 Mar 2017 14:12:43 +0000
+Reviewed-on: https://review.openstack.org/442783
+Project: openstack/deb-aodh
+Branch: refs/heads/master

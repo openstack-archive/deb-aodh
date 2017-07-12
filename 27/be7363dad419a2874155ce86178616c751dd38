@@ -1,0 +1,11 @@
+Code-Review+1: Hanxi Liu <hanxi.liu@easystack.cn>
+Code-Review+1: Dai Dang Van <daidv@vn.fujitsu.com>
+Code-Review+1: Mehdi Abaakouk (sileht) <sileht@sileht.net>
+Code-Review+2: gordon chung <gord@live.ca>
+Workflow+1: gordon chung <gord@live.ca>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Wed, 12 Jul 2017 19:00:58 +0000
+Reviewed-on: https://review.openstack.org/461370
+Project: openstack/deb-aodh
+Branch: refs/heads/stable/ocata
